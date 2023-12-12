@@ -20,6 +20,15 @@ Secondly, we provide a full 3D environment to allow the simulation of free flyin
 | ![3Dof_GoToXY_v2](omniisaacgymenvs/demos/3Dof_GoToXY_v2.gif) | ![3Dof_GoToPose_v2](omniisaacgymenvs/demos/3Dof_GoToPose_v2.gif) | ![6Dof_GoToXYZ_v8](omniisaacgymenvs/demos/6Dof_GoToXYZ_v8.gif) |
 
 ---
+
+## How to run
+1. **Training**
+  PYTHON_PATH scripts/rlgames_train.py task=buoyancy/Buoyancy_GoToPose train=buoyancy/Buoyancy_PPOcontinuous_MLP headless=True num_envs=4096 enable_livestream=True
+
+2. **Test**
+
+
+
 ## Task Description
 
 Currently we provide two primary environments, each tailored to simulate distinct robotic systems:
