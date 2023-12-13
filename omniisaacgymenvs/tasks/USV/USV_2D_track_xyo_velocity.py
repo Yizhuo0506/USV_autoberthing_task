@@ -8,14 +8,14 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_core import (
+from omniisaacgymenvs.tasks.USV.USV_2D_core import (
     Core,
     parse_data_dict,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_task_rewards import (
+from omniisaacgymenvs.tasks.USV.USV_2D_task_rewards import (
     TrackXYOVelocityReward,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_task_parameters import (
+from omniisaacgymenvs.tasks.USV.USV_2D_task_parameters import (
     TrackXYOVelocityParameters,
 )
 

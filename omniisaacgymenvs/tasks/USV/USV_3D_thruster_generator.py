@@ -8,7 +8,7 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_core import (
+from omniisaacgymenvs.tasks.USV.USV_3D_core import (
     parse_data_dict,
     euler_angles_to_matrix,
 )

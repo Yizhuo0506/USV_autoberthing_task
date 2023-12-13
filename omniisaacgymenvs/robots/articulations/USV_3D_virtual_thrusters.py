@@ -11,10 +11,10 @@ import omni
 import math
 from pxr import Gf
 
-from omniisaacgymenvs.robots.articulations.utils.MFP_utils import *
-from omniisaacgymenvs.tasks.virtual_floating_platform.MFP3D_thruster_generator import compute_actions
-from omniisaacgymenvs.tasks.virtual_floating_platform.MFP3D_core import parse_data_dict
-from omniisaacgymenvs.tasks.virtual_floating_platform.MFP3D_thruster_generator import ConfigurationParameters
+from omniisaacgymenvs.robots.articulations.utils.USV_utils import *
+from omniisaacgymenvs.tasks.USV.USV_3D_thruster_generator import compute_actions
+from omniisaacgymenvs.tasks.USV.USV_3D_core import parse_data_dict
+from omniisaacgymenvs.tasks.USV.USV_3D_thruster_generator import ConfigurationParameters
 
 class CreatePlatform:
     """

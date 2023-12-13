@@ -8,19 +8,19 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_core import (
+from omniisaacgymenvs.tasks.USV.USV_3D_core import (
     Core,
     parse_data_dict,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_task_rewards import (
+from omniisaacgymenvs.tasks.USV.USV_3D_task_rewards import (
     GoToXYZReward,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_task_parameters import (
+from omniisaacgymenvs.tasks.USV.USV_3D_task_parameters import (
     GoToXYZParameters,
 )
 from omniisaacgymenvs.utils.pin3D import VisualPin3D
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_go_to_xy import (
+from omniisaacgymenvs.tasks.USV.USV_2D_go_to_xy import (
     GoToXYTask as GoToXYTask2D,
 )
 

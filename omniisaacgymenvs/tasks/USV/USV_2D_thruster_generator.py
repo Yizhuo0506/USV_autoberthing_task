@@ -8,7 +8,7 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_core import parse_data_dict
+from omniisaacgymenvs.tasks.USV.USV_2D_core import parse_data_dict
 from dataclasses import dataclass
 import torch
 import math

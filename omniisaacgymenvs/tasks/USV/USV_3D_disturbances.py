@@ -11,19 +11,19 @@ __status__ = "development"
 import math
 import torch
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_disturbances import (
+from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
     UnevenFloorDisturbance as UnevenFloorDisturbance2D,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_disturbances import (
+from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
     TorqueDisturbance as TorqueDisturbance2D,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_disturbances import (
+from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
     NoisyActions as NoisyActions2D,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_disturbances import (
+from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
     NoisyObservations as NoisyObservations2D,
 )
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_disturbances import (
+from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
     MassDistributionDisturbances as MassDistributionDisturbances2D,
 )
 

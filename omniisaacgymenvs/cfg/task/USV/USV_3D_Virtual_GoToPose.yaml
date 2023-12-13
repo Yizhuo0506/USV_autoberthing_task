@@ -1,8 +1,8 @@
 # used to create the object
-name: R3AMA2DVirtual
+name: USV3DVirtual
 
 physics_engine: ${..physics_engine}
-experiment: R3AMA_2D_Virtual_GoToPose
+experiment: USV_3D_Virtual_GoToPose
 
 # if given, will override the device setting in gym. 
 env:
@@ -20,7 +20,7 @@ env:
   clipActions: 1.0
 
   # Split the maximum amount of thrust across all thrusters.
-  split_thrust: True
+  split_thrust: False
 
   disturbances:
     # Uneven floor generation
@@ -106,7 +106,7 @@ env:
       mass: 10.92
       CoM: [0,0,0]
       radius: 0.31
-      shape: "sphere"
+      shape: "cylinder"
       refinement: 2
 
     configuration:
@@ -118,16 +118,16 @@ env:
       save_path: "config.png"
 
   penalties_parameters:
-    penalize_energy: False
-    penalize_energy_fn: "lambda x,step: -torch.abs(x)*0.05"
+    penalize_energy: True
+    penalize_energy_fn: "lambda x,step: -torch.abs(x)*0.15*step/2000"
     penalize_energy_c1: 0.01
     penalize_energy_c2: 0.00
     penalize_linear_velocities: False
     penalize_linear_velocities_fn: "lambda x,step: -torch.norm(x, dim=-1)*0.025"
     penalize_linear_velocities_c1: 0.01
     penalize_linear_velocities_c2: 0.00
-    penalize_angular_velocities: False
-    penalize_angular_velocities_fn: "lambda x,step: -torch.abs(x)*0.1"
+    penalize_angular_velocities: True
+    penalize_angular_velocities_fn: "lambda x,step: -(torch.norm(x, dim=-1) - 0.3)*1.0*(torch.norm(x, dim=-1) > 0.3)*step/2000"
     penalize_angular_velocities_c1: 0.01
     penalize_angular_velocities_c2: 0.00
 
@@ -170,7 +170,7 @@ sim:
     gpu_temp_buffer_capacity: 16777216
     gpu_max_num_partitions: 8
 
-  R3AMA2d:
+  USV2d:
     # -1 to use default values
     override_usd_defaults: False
     enable_self_collisions: False

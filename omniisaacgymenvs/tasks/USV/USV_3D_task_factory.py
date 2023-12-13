@@ -8,13 +8,13 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_go_to_xyz import GoToXYZTask
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_go_to_pose import (
+from omniisaacgymenvs.tasks.USV.USV_3D_go_to_xyz import GoToXYZTask
+from omniisaacgymenvs.tasks.USV.USV_3D_go_to_pose import (
     GoToPoseTask,
 )
 
-# from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_track_xy_velocity import TrackXYVelocityTask
-# from omniisaacgymenvs.tasks.R3AMA.R3AMA_3D_track_xyo_velocity import TrackXYOVelocityTask
+# from omniisaacgymenvs.tasks.USV.USV_3D_track_xy_velocity import TrackXYVelocityTask
+# from omniisaacgymenvs.tasks.USV.USV_3D_track_xyo_velocity import TrackXYOVelocityTask
 
 
 class TaskFactory:

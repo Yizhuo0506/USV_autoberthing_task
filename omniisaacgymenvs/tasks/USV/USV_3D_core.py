@@ -11,7 +11,7 @@ __status__ = "development"
 import torch
 from dataclasses import dataclass
 
-from omniisaacgymenvs.tasks.R3AMA.R3AMA_2D_core import Core as Core2D
+from omniisaacgymenvs.tasks.USV.USV_2D_core import Core as Core2D
 
 EPS = 1e-6  # small constant to avoid divisions by 0 and log(0)
 

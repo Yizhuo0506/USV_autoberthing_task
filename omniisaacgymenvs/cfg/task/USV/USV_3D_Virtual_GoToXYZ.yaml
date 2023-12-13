@@ -1,8 +1,8 @@
 # used to create the object
-name: R3AMA2DVirtual
+name: USV3DVirtual
 
 physics_engine: ${..physics_engine}
-experiment: R3AMA_2D_Virtual_TrackXYVelocity
+experiment: USV_3D_Virtual_GoToXYZ
 
 # if given, will override the device setting in gym. 
 env:
@@ -16,10 +16,11 @@ env:
 
   controlFrequencyInv: 10
 
-  clipObservations: {state: 5.0}
+  clipObservations: {state: 8.0}
   clipActions: 1.0
 
-  split_thrust: True
+  # Split the maximum amount of thrust across all thrusters.
+  split_thrust: False
 
   disturbances:
     # Uneven floor generation
@@ -71,30 +72,32 @@ env:
       base_mass: ${...platform.core.mass}
 
   task_parameters: 
-    name: TrackXYVelocity
-    lin_vel_tolerance: 0.01
+    name: GoToXYZ
+    position_tolerance: 0.01
     kill_after_n_steps_in_tolerance: 50 # 10seconds
-    kill_dist: 500.0
-    goal_random_velocity: 0.75
+    max_spawn_dist: 4.5
+    min_spawn_dist: 0.5
+    kill_dist: 8.0
+    boundary_cost: 25
 
   reward_parameters:
-    name: TrackXYVelocity
+    name: GoToXYZ
     reward_mode: exponential
     exponential_reward_coeff: 0.25
 
   penalties_parameters:
-    penalize_energy: False
-    penalize_energy_fn: "lambda x: x*c1 + c2"
+    penalize_energy: True
+    penalize_energy_fn: "lambda x,step: -torch.abs(x)*0.15*step/2000"
     penalize_energy_c1: 0.01
     penalize_energy_c2: 0.00
-    penalize_linear_velocity: False
-    penalize_linear_velocity_fn: "lambda x: x*c1 + c2"
-    penalize_linear_velocity_c1: 0.01
-    penalize_linear_velocity_c2: 0.00
-    penalize_angular_velocity: False
-    penalize_angular_velocity_fn: "lambda x: x*c1 + c2"
-    penalize_angular_velocity_c1: 0.01
-    penalize_angular_velocity_c2: 0.00
+    penalize_linear_velocities: False
+    penalize_linear_velocities_fn: "lambda x,step: -torch.norm(x, dim=-1)*0.01"
+    penalize_linear_velocities_c1: 0.01
+    penalize_linear_velocities_c2: 0.00
+    penalize_angular_velocities: True
+    penalize_angular_velocities_fn: "lambda x,step: -(torch.norm(x, dim=-1) - 0.3)*1.0*(torch.norm(x, dim=-1) > 0.3)*step/2000"
+    penalize_angular_velocities_c1: 0.01
+    penalize_angular_velocities_c2: 0.00
 
   platform:
     randomization:
@@ -111,7 +114,7 @@ env:
       max_thruster_kill: 2
 
     core:
-      mass: 5.32
+      mass: 10.92
       CoM: [0,0,0]
       radius: 0.31
       shape: "sphere"
@@ -122,8 +125,8 @@ env:
       num_anchors: 4
       offset: 0.75839816339
       thrust_force: 1.0
-      visualize: False
-      save_path: "config.png"
+      visualize: True
+      save_path: "config3D.png"
 
 sim:
   dt: 0.02
@@ -164,7 +167,7 @@ sim:
     gpu_temp_buffer_capacity: 16777216
     gpu_max_num_partitions: 8
 
-  R3AMA2d:
+USV2d:
     # -1 to use default values
     override_usd_defaults: False
     enable_self_collisions: False
