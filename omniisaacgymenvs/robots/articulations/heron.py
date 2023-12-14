@@ -62,7 +62,7 @@ class Heron(Robot):
             self._usd_path = assets_root_path + "/Isaac/Robots/Heron/heron.usd"
 
         add_reference_to_stage(self._usd_path, prim_path)
-        scale = torch.tensor([0.1, 0.1, 0.1])
+        # scale = torch.tensor([0.1, 0.1, 0.1])
 
         super().__init__(
             prim_path=prim_path,

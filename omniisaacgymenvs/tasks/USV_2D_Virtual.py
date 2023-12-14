@@ -69,7 +69,7 @@ class USV2DVirtual(RLTask):
         self._sim_config = sim_config
         self._cfg = sim_config.config
         self._task_cfg = sim_config.task_config
-        self._platform_cfg = self._task_cfg["env"]["platform"]
+        self._heron_cfg = self._task_cfg["env"]["platform"]
         self._num_envs = self._task_cfg["env"]["numEnvs"]
         self._env_spacing = self._task_cfg["env"]["envSpacing"]
         self._max_episode_length = self._task_cfg["env"]["maxEpisodeLength"]
@@ -108,7 +108,7 @@ class USV2DVirtual(RLTask):
         self.task = task_factory.get(task_cfg, reward_cfg, self._num_envs, self._device)
         self._penalties = parse_data_dict(Penalties(), penalty_cfg)
         self.virtual_platform = VirtualPlatform(
-            self._num_envs, self._platform_cfg, self._device
+            self._num_envs, self._heron_cfg, self._device
         )
         self._num_observations = self.task._num_observations
         self._max_actions = self.virtual_platform._max_thrusters
@@ -231,28 +231,28 @@ class USV2DVirtual(RLTask):
             scene (Usd.Stage): the USD scene to be set up."""
 
         # Add the floating platform, and the marker
-        self.get_floating_platform()
+        self.get_heron()
         self.get_target()
 
         RLTask.set_up_scene(self, scene, replicate_physics=False)
 
         # Collects the interactive elements in the scene
         root_path = "/World/envs/.*/heron"
-        self._platforms = HeronView(
+        self._heron = HeronView(
             prim_paths_expr=root_path, name="heron_view"
         )
 
         # Add views to scene
-        scene.add(self._platforms)
-        scene.add(self._platforms.base)
+        scene.add(self._heron)
+        scene.add(self._heron.base)
 
-        scene.add(self._platforms.thrusters)
+        scene.add(self._heron.thrusters)
 
         # Add arrows to scene if task is go to pose
         scene, self._marker = self.task.add_visual_marker_to_scene(scene)
         return
     
-    def get_floating_platform(self):
+    def get_heron(self):
         """
         Adds the floating platform to the scene."""
 
@@ -260,7 +260,7 @@ class USV2DVirtual(RLTask):
             prim_path=self.default_zero_env_path + "/heron",
             name="heron",
             translation=self._fp_position,
-            # cfg=self._platform_cfg,
+            # cfg=self._heron_cfg,
         )
         self._sim_config.apply_articulation_settings(
             "heron",
@@ -281,11 +281,11 @@ class USV2DVirtual(RLTask):
         Updates the state of the system."""
 
         # Collects the position and orientation of the platform
-        self.root_pos, self.root_quats = self._platforms.get_world_poses(clone=True)
+        self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
         # Collects the velocity of the platform
-        self.root_velocities = self._platforms.get_velocities(clone=True)
+        self.root_velocities = self._heron.get_velocities(clone=True)
         root_velocities = self.root_velocities.clone()
         # Cast quaternion to Yaw
         siny_cosp = 2 * (
@@ -328,7 +328,7 @@ class USV2DVirtual(RLTask):
         # Get the action masks
         self.obs_buf["masks"] = self.virtual_platform.action_masks
 
-        observations = {self._platforms.name: {"obs_buf": self.obs_buf}}
+        observations = {self._heron.name: {"obs_buf": self.obs_buf}}
         return observations
 
     def pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -385,12 +385,12 @@ class USV2DVirtual(RLTask):
         """
         Applies all the forces to the platform and its thrusters."""
 
-        self._platforms.thrusters.apply_forces_and_torques_at_pos(
+        self._heron.thrusters.apply_forces_and_torques_at_pos(
             forces=self.forces, positions=self.positions, is_global=False
         )
         floor_forces = self.UF.get_floor_forces(self.root_pos)
         torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
-        self._platforms.base.apply_forces_and_torques_at_pos(
+        self._heron.base.apply_forces_and_torques_at_pos(
             forces=floor_forces,
             torques=torque_disturbance,
             positions=self.root_pos,
@@ -402,10 +402,10 @@ class USV2DVirtual(RLTask):
         This function implements the logic to be performed after a reset."""
 
         # implement any logic required for simulation on-start here
-        self.root_pos, self.root_rot = self._platforms.get_world_poses()
-        self.root_velocities = self._platforms.get_velocities()
-        self.dof_pos = self._platforms.get_joint_positions()
-        self.dof_vel = self._platforms.get_joint_velocities()
+        self.root_pos, self.root_rot = self._heron.get_world_poses()
+        self.root_velocities = self._heron.get_velocities()
+        self.dof_pos = self._heron.get_joint_positions()
+        self.dof_vel = self._heron.get_joint_velocities()
 
         self.initial_root_pos, self.initial_root_rot = (
             self.root_pos.clone(),
@@ -472,7 +472,7 @@ class USV2DVirtual(RLTask):
         root_rot[env_ids, :] = heading
         # Resets the states of the joints
         self.dof_pos[env_ids, :] = torch.zeros(
-            (num_resets, self._platforms.num_dof), device=self._device
+            (num_resets, self._heron.num_dof), device=self._device
         )
         self.dof_vel[env_ids, :] = 0
         # Sets the velocities to 0
@@ -480,12 +480,12 @@ class USV2DVirtual(RLTask):
         root_velocities[env_ids] = 0
 
         # apply resets
-        self._platforms.set_joint_positions(self.dof_pos[env_ids], indices=env_ids)
-        self._platforms.set_joint_velocities(self.dof_vel[env_ids], indices=env_ids)
-        self._platforms.set_world_poses(
+        self._heron.set_joint_positions(self.dof_pos[env_ids], indices=env_ids)
+        self._heron.set_joint_velocities(self.dof_vel[env_ids], indices=env_ids)
+        self._heron.set_world_poses(
             root_pos[env_ids], root_rot[env_ids], indices=env_ids
         )
-        self._platforms.set_velocities(root_velocities[env_ids], indices=env_ids)
+        self._heron.set_velocities(root_velocities[env_ids], indices=env_ids)
 
     def reset_idx(self, env_ids: torch.Tensor) -> None:
         """
@@ -501,14 +501,14 @@ class USV2DVirtual(RLTask):
         self.UF.generate_floor(env_ids, num_resets)
         self.TD.generate_torque(env_ids, num_resets)
         self.MDD.randomize_masses(env_ids, num_resets)
-        self.MDD.set_masses(self._platforms.base, env_ids)
+        self.MDD.set_masses(self._heron.base, env_ids)
         # Randomizes the starting position of the platform within a disk around the target
         root_pos, root_rot = self.task.get_spawns(
             env_ids, self.initial_root_pos.clone(), self.initial_root_rot.clone()
         )
         # Resets the states of the joints
         self.dof_pos[env_ids, :] = torch.zeros(
-            (num_resets, self._platforms.num_dof), device=self._device
+            (num_resets, self._heron.num_dof), device=self._device
         )
         self.dof_vel[env_ids, :] = 0
         # Sets the velocities to 0
@@ -516,12 +516,12 @@ class USV2DVirtual(RLTask):
         root_velocities[env_ids] = 0
 
         # apply resets
-        self._platforms.set_joint_positions(self.dof_pos[env_ids], indices=env_ids)
-        self._platforms.set_joint_velocities(self.dof_vel[env_ids], indices=env_ids)
-        self._platforms.set_world_poses(
+        self._heron.set_joint_positions(self.dof_pos[env_ids], indices=env_ids)
+        self._heron.set_joint_velocities(self.dof_vel[env_ids], indices=env_ids)
+        self._heron.set_world_poses(
             root_pos[env_ids], root_rot[env_ids], indices=env_ids
         )
-        self._platforms.set_velocities(root_velocities[env_ids], indices=env_ids)
+        self._heron.set_velocities(root_velocities[env_ids], indices=env_ids)
 
         # bookkeeping
         self.reset_buf[env_ids] = 0
