@@ -9,11 +9,11 @@ __email__ = "antoine.richard@uni.lu"
 __status__ = "development"
 
 from omniisaacgymenvs.tasks.base.rl_task import RLTask
-from omniisaacgymenvs.robots.articulations.USV_2D_virtual_thrusters import (
-    ModularFloatingPlatform,
+from omniisaacgymenvs.robots.articulations.heron import (
+    Heron,
 )
-from omniisaacgymenvs.robots.articulations.views.USV_2d_virtual_thrusters_view import (
-    ModularFloatingPlatformView,
+from omniisaacgymenvs.robots.articulations.views.heron_view import (
+    HeronView,
 )
 from omniisaacgymenvs.utils.pin import VisualPin
 from omniisaacgymenvs.utils.arrow import VisualArrow
@@ -237,9 +237,9 @@ class USV2DVirtual(RLTask):
         RLTask.set_up_scene(self, scene, replicate_physics=False)
 
         # Collects the interactive elements in the scene
-        root_path = "/World/envs/.*/Modular_floating_platform"
-        self._platforms = ModularFloatingPlatformView(
-            prim_paths_expr=root_path, name="modular_floating_platform_view"
+        root_path = "/World/envs/.*/heron"
+        self._platforms = HeronView(
+            prim_paths_expr=root_path, name="heron_view"
         )
 
         # Add views to scene
@@ -256,16 +256,16 @@ class USV2DVirtual(RLTask):
         """
         Adds the floating platform to the scene."""
 
-        fp = ModularFloatingPlatform(
-            prim_path=self.default_zero_env_path + "/Modular_floating_platform",
-            name="modular_floating_platform",
+        fp = Heron(
+            prim_path=self.default_zero_env_path + "/heron",
+            name="heron",
             translation=self._fp_position,
-            cfg=self._platform_cfg,
+            # cfg=self._platform_cfg,
         )
         self._sim_config.apply_articulation_settings(
-            "modular_floating_platform",
+            "heron",
             get_prim_at_path(fp.prim_path),
-            self._sim_config.parse_actor_config("modular_floating_platform"),
+            self._sim_config.parse_actor_config("heron"),
         )
 
     def get_target(self) -> None:
