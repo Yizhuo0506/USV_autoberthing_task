@@ -136,6 +136,10 @@ class VirtualPlatform:
         rand_forces = forces * self.thrust_force * (1 - self.action_masks)
         # Split transforms into translation and rotation
         R = self.transforms2D[:, :, :2, :2].reshape(-1, 2, 2)
+        
+        # TODO: currently R is identity matrix
+        R = torch.eye(2, device=self._device).unsqueeze(0).repeat(self.transforms2D.shape[0] * self._max_thrusters, 1, 1)
+        
         T = self.transforms2D[:, :, 2, :2].reshape(-1, 2)
         # Create a zero tensor to add 3rd dimmension
         zero = torch.zeros((T.shape[0], 1), device=self._device, dtype=torch.float32)

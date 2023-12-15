@@ -6,7 +6,7 @@ experiment: USV_2D_Virtual_GoToXY
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:16,${...num_envs}}
+  numEnvs: ${resolve_default:64,${...num_envs}}
   envSpacing: 12
   maxEpisodeLength: 700
   enableDebugVis: False
@@ -20,7 +20,7 @@ env:
   clipActions: 1.0
 
   # Split the maximum amount of thrust across all thrusters.
-  split_thrust: True
+  split_thrust: False
 
   disturbances:
     # Uneven floor generation

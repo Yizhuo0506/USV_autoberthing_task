@@ -352,11 +352,11 @@ class USV2DVirtual(RLTask):
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
-            # If actions are multidiscrete [0, 1]
-            thrust_cmds = self.actions.float()
+            # If actions are multidiscrete [0, 1] 
+            thrust_cmds = self.actions.float() * 2 - 1
         elif self._discrete_actions == "Continuous":
-            # Transform continuous actions to [0, 1] discrete actions.
-            thrust_cmds = torch.clamp((self.actions + 1) / 2, min=0.0, max=1.0)
+            # Transform continuous actions to [-1, 1] discrete actions.
+            thrust_cmds = self.actions
         else:
             raise NotImplementedError("")
 

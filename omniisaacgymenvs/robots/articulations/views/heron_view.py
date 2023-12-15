@@ -48,3 +48,5 @@ class HeronView(ArticulationView):
                                         name="base_view")
 
         self.thrusters = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/thruster_*", name="thrusters")
+        
+        
