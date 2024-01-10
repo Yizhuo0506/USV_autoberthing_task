@@ -36,6 +36,8 @@ from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
     MassDistributionDisturbances,
 )
 
+from omniisaacgymenvs.envs.USV.Hydrodynamics import *
+
 from omni.isaac.core.utils.torch.rotations import *
 from omni.isaac.core.utils.prims import get_prim_at_path
 
@@ -104,6 +106,48 @@ class USV2DVirtual(RLTask):
         task_cfg = self._task_cfg["env"]["task_parameters"]
         reward_cfg = self._task_cfg["env"]["reward_parameters"]
         penalty_cfg = self._task_cfg["env"]["penalties_parameters"]
+        
+        #physics
+        self.gravity=self._task_cfg["sim"]["gravity"][2]
+        self.water_density=self._task_cfg["dynamics"]["buoyancy"]["water_density"] # kg/m^3
+        self.timeConstant = self._task_cfg["dynamics"]["thrusters"]["timeConstant"]
+
+        #buoyancy
+        self.average_buoyancy_force_value = self._task_cfg["dynamics"]["buoyancy"]["average_buoyancy_force_value"]
+        self.amplify_torque = self._task_cfg["dynamics"]["buoyancy"]["amplify_torque"]
+        
+        #boxes dimension to compute buoyancy forces and torques
+        self.box_density=self._task_cfg["dynamics"]["buoyancy"]["material_density"]
+        self.box_width=self._task_cfg["dynamics"]["buoyancy"]["box_width"]
+        self.box_large=self._task_cfg["dynamics"]["buoyancy"]["box_large"]
+        self.box_high=self._task_cfg["dynamics"]["buoyancy"]["box_high"]
+        self.box_volume=self.box_width*self.box_large*self.box_high
+        self.box_mass=self._task_cfg["dynamics"]["buoyancy"]["mass"]
+        self.half_box_size=self.box_high/2
+        
+        #thrusters dynamics
+            #interpolation
+        self.cmd_lower_range = self._task_cfg["dynamics"]["thrusters"]["cmd_lower_range"]
+        self.cmd_upper_range = self._task_cfg["dynamics"]["thrusters"]["cmd_upper_range"]
+        self.numberOfPointsForInterpolation = self._task_cfg["dynamics"]["thrusters"]["interpolation"]["numberOfPointsForInterpolation"]
+        self.interpolationPointsFromRealData = self._task_cfg["dynamics"]["thrusters"]["interpolation"]["interpolationPointsFromRealData"]
+            #least square methode
+        self.neg_cmd_coeff=self._task_cfg["dynamics"]["thrusters"]["leastSquareMethod"]["neg_cmd_coeff"]
+        self.pos_cmd_coeff=self._task_cfg["dynamics"]["thrusters"]["leastSquareMethod"]["pos_cmd_coeff"]
+            #acceleration
+        self.alpha = self._task_cfg["dynamics"]["acceleration"]["alpha"]
+        self.last_time = self._task_cfg["dynamics"]["acceleration"]["last_time"]
+        #damping constants
+        self.squared_drag_coefficients = self._task_cfg["dynamics"]["damping"]["squared_drag_coefficients"]
+        self.linear_damping = self._task_cfg["dynamics"]["damping"]["linear_damping"]
+        self.quadratic_damping = self._task_cfg["dynamics"]["damping"]["quadratic_damping"]
+        self.linear_damping_forward_speed = self._task_cfg["dynamics"]["damping"]["linear_damping_forward_speed"]
+        self.offset_linear_damping = self._task_cfg["dynamics"]["damping"]["offset_linear_damping"]
+        self.offset_lin_forward_damping_speed = self._task_cfg["dynamics"]["damping"]["offset_lin_forward_damping_speed"]
+        self.offset_nonlin_damping = self._task_cfg["dynamics"]["damping"]["offset_nonlin_damping"]
+        self.scaling_damping = self._task_cfg["dynamics"]["damping"]["scaling_damping"]
+        self.offset_added_mass = self._task_cfg["dynamics"]["damping"]["offset_added_mass"]
+        self.scaling_added_mass = self._task_cfg["dynamics"]["damping"]["scaling_added_mass"]
         # Instantiate the task, reward and platform
         self.task = task_factory.get(task_cfg, reward_cfg, self._num_envs, self._device)
         self._penalties = parse_data_dict(Penalties(), penalty_cfg)
@@ -138,6 +182,16 @@ class USV2DVirtual(RLTask):
         self.episode_sums = self.task.create_stats({})
         self.add_stats(self._penalties.get_stats_name())
         self.add_stats(["normed_linear_vel", "normed_angular_vel", "actions_sum"])
+        
+        #forces to be applied
+        self.drag=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        
+        #obs variables
+        self.root_pos = torch.zeros((self._num_envs, 3), device=self._device, dtype=torch.float32)
+        self.root_quats = torch.zeros((self._num_envs, 4), device=self._device, dtype=torch.float32)
+        self.root_velocities = torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        self.euler_angles = torch.zeros((self._num_envs, 3), device=self._device, dtype=torch.float32)
+        
         return
 
     def set_action_and_observation_spaces(self) -> None:
@@ -233,6 +287,7 @@ class USV2DVirtual(RLTask):
         # Add the floating platform, and the marker
         self.get_heron()
         self.get_target()
+        self.get_hydrodynamics()
 
         RLTask.set_up_scene(self, scene, replicate_physics=False)
 
@@ -275,6 +330,10 @@ class USV2DVirtual(RLTask):
         self.task.generate_target(
             self.default_zero_env_path, self._default_marker_position
         )
+        
+    def get_hydrodynamics(self):
+        """create physics"""
+        self.hydrodynamics=HydrodynamicsObject(self.num_envs, self._device, self.water_density, self.gravity, self.box_width/2, self.box_large/2, self.average_buoyancy_force_value, self.amplify_torque, self.squared_drag_coefficients, self.linear_damping, self.quadratic_damping, self.linear_damping_forward_speed, self.offset_linear_damping, self.offset_lin_forward_damping_speed, self.offset_nonlin_damping, self.scaling_damping, self.offset_added_mass, self.scaling_added_mass, self.alpha,self.last_time )
 
     def update_state(self) -> None:
         """
@@ -349,6 +408,8 @@ class USV2DVirtual(RLTask):
         # Collect actions
         actions = actions.clone().to(self._device)
         self.actions = actions
+        
+        self.actions = torch.ones_like(self.actions) * 0.5
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -366,36 +427,52 @@ class USV2DVirtual(RLTask):
         thrusts = self.AN.add_noise_on_act(thrusts)
         # clear actions for reset envs
         thrusts[reset_env_ids] = 0
+        print(self.actions)
         # If split thrust, equally shares the maximum amount of thrust across thrusters.
-        if self.split_thrust:
-            factor = torch.max(
-                torch.sum(self.actions, -1),
-                torch.ones((self._num_envs), dtype=torch.float32, device=self._device),
-            )
-            self.positions, self.forces = self.virtual_platform.project_forces(
-                thrusts / factor.view(self._num_envs, 1)
-            )
-        else:
-            self.positions, self.forces = self.virtual_platform.project_forces(thrusts)
-        # Apply forces
+        self.forces = torch.zeros((self._num_envs, self._max_actions, 3), device=self._device)
+        self.forces[:,:,-1] = thrusts
+        print(self.forces)
         self.apply_forces()
         return
 
     def apply_forces(self) -> None:
         """
         Applies all the forces to the platform and its thrusters."""
+        
+        #self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #TODO: * self.box_is_under_water[:,:].mT
 
         self._heron.thrusters.apply_forces_and_torques_at_pos(
-            forces=self.forces, positions=self.positions, is_global=False
+            forces=self.forces, is_global=False
         )
-        floor_forces = self.UF.get_floor_forces(self.root_pos)
-        torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
+        #floor_forces = self.UF.get_floor_forces(self.root_pos)
+        #torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
+
+        #self._heron.base.apply_forces_and_torques_at_pos(
+        #    forces=floor_forces + self.drag[:,:3],
+        #    torques=torque_disturbance,
+        #    positions=self.root_pos,
+        #    is_global=True,
+        #)
+        
+        '''
         self._heron.base.apply_forces_and_torques_at_pos(
             forces=floor_forces,
             torques=torque_disturbance,
             positions=self.root_pos,
             is_global=True,
         )
+        '''
+        # Bouyancy
+        self.archimedes[:,:]=self.buoyancy_physics.compute_archimedes_metacentric_local(self.submerged_volume, self.euler_angles, self.root_quats) * self.box_is_under_water[:,:].mT
+        # Drag force
+        self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) * self.box_is_under_water[:,:].mT
+         
+        self.thrusters[:,:] = self.thrusters_dynamics.update_forces()
+        self.thrusters[:,:] *= self.box_is_under_water.mT
+
+        self._boxes.apply_forces_and_torques_at_pos(forces=self.archimedes[:,:3] + self.drag[:,:3] , torques=self.archimedes[:,3:] + self.drag[:,3:], is_global=False)
+        self._thrusters_left.apply_forces_and_torques_at_pos(self.thrusters[:,:3],positions=self.left_thruster_position,  is_global=False)
+        self._thrusters_right.apply_forces_and_torques_at_pos(self.thrusters[:,3:], positions= self.right_thruster_position, is_global=False)        
 
     def post_reset(self):
         """
