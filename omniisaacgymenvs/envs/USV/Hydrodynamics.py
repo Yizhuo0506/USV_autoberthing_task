@@ -48,7 +48,7 @@ class HydrodynamicsObject:
         
         return
         
-    def compute_squared_ddrag(self, boat_velocities, quaternions):
+    def compute_squared_drag(self, boat_velocities, quaternions):
 
         """this function implements the drag, rotation drag is needed becaurle of where archimedes is applied. if the boat start to rate around x for 
         exemple, since archimedes is applied onto the center, isaac sim will believe that the boat is still under water and so the boat is free to rotate around and

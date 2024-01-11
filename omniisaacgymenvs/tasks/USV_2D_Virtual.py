@@ -192,6 +192,16 @@ class USV2DVirtual(RLTask):
         self.root_velocities = torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
         self.euler_angles = torch.zeros((self._num_envs, 3), device=self._device, dtype=torch.float32)
         
+        #volume submerged
+        self.high_submerged=torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
+        self.submerged_volume=torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
+        self.box_is_under_water = torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
+        
+        #forces to be applied
+        self.buoyancy=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        self.drag=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        #self.thrusters=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        
         return
 
     def set_action_and_observation_spaces(self) -> None:
@@ -363,6 +373,12 @@ class USV2DVirtual(RLTask):
         # Compute the heading
         self.heading[:, 0] = torch.cos(orient_z)
         self.heading[:, 1] = torch.sin(orient_z)
+        
+        #body underwater
+        self.high_submerged[:]=torch.clamp(self.half_box_size-self.root_pos[:,2], 0, self.box_high)
+        self.submerged_volume[:]= torch.clamp(self.high_submerged * self.box_width * self.box_large, 0, self.box_volume)
+        self.box_is_under_water = torch.where(self.high_submerged[:] > 0,1.0,0.0 ).unsqueeze(0)
+        
         # Dump to state
         self.current_state = {
             "position": root_positions[:, :2],
@@ -409,7 +425,7 @@ class USV2DVirtual(RLTask):
         actions = actions.clone().to(self._device)
         self.actions = actions
         
-        self.actions = torch.ones_like(self.actions) * 0.5
+        self.actions = torch.ones_like(self.actions) * 1
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -440,10 +456,11 @@ class USV2DVirtual(RLTask):
         Applies all the forces to the platform and its thrusters."""
         
         #self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #TODO: * self.box_is_under_water[:,:].mT
-
+        '''
         self._heron.thrusters.apply_forces_and_torques_at_pos(
             forces=self.forces, is_global=False
         )
+        '''
         #floor_forces = self.UF.get_floor_forces(self.root_pos)
         #torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
 
@@ -463,16 +480,21 @@ class USV2DVirtual(RLTask):
         )
         '''
         # Bouyancy
-        self.archimedes[:,:]=self.buoyancy_physics.compute_archimedes_metacentric_local(self.submerged_volume, self.euler_angles, self.root_quats) * self.box_is_under_water[:,:].mT
+        # self.buoyancy[:,:]=self.hydrodynamics.compute_archimedes_metacentric_local(self.submerged_volume, self.euler_angles, self.root_quats)
         # Drag force
-        self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) * self.box_is_under_water[:,:].mT
+        # self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #* self.box_is_under_water[:,:].mT
          
-        self.thrusters[:,:] = self.thrusters_dynamics.update_forces()
-        self.thrusters[:,:] *= self.box_is_under_water.mT
+        # self.thrusters[:,:] = self.thrusters_dynamics.update_forces()
+        # self.thrusters[:,:] *= self.box_is_under_water.mT
 
-        self._boxes.apply_forces_and_torques_at_pos(forces=self.archimedes[:,:3] + self.drag[:,:3] , torques=self.archimedes[:,3:] + self.drag[:,3:], is_global=False)
-        self._thrusters_left.apply_forces_and_torques_at_pos(self.thrusters[:,:3],positions=self.left_thruster_position,  is_global=False)
-        self._thrusters_right.apply_forces_and_torques_at_pos(self.thrusters[:,3:], positions= self.right_thruster_position, is_global=False)        
+        self._heron.base.apply_forces_and_torques_at_pos(forces=self.buoyancy[:,:3] + self.drag[:,:3] , torques=self.buoyancy[:,3:] + self.drag[:,3:], is_global=False)
+        
+        # self._thrusters_left.apply_forces_and_torques_at_pos(self.thrusters[:,:3],positions=self.left_thruster_position,  is_global=False)
+        # self._thrusters_right.apply_forces_and_torques_at_pos(self.thrusters[:,3:], positions= self.right_thruster_position, is_global=False)
+        
+        self._heron.thrusters.apply_forces_and_torques_at_pos(
+            forces=self.forces, is_global=False
+        )  
 
     def post_reset(self):
         """

@@ -216,7 +216,7 @@ dynamics:
     mass: 28.0 
     box_width: 1.0
     box_large: 1.40
-    box_high: 0.20
+    box_high: 0.32
 
   acceleration:
     alpha: 0.3
