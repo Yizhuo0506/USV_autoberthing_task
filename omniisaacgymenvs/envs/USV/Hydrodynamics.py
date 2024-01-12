@@ -51,7 +51,7 @@ class HydrodynamicsObject:
     def compute_squared_drag(self, boat_velocities, quaternions):
 
         """this function implements the drag, rotation drag is needed becaurle of where archimedes is applied. if the boat start to rate around x for 
-        exemple, since archimedes is applied onto the center, isaac sim will believe that the boat is still under water and so the boat is free to rotate around and
+        example, since archimedes is applied onto the center, isaac sim will believe that the boat is still under water and so the boat is free to rotate around and
         y. So to prevent this behaviour, if we don't want to create 4 rigid bodies as talked above, we are forced to add a drag + stabilizer to the simulation.
         
         coefficients  = 0.5 * ρ * v^2 * A * Cd
@@ -199,8 +199,8 @@ class HydrodynamicsObject:
         self.archimedes_force_global[:,2] = - self.water_density * self.gravity * submerged_volume #buoyancy force
 
         #torques expressed in global frame, size is (num_envs,3)
-        """ self.archimedes_torque_global[:,0] = -1 * self.metacentric_width * (torch.sin(roll) * self.archimedes_force_global[:,2])
-        self.archimedes_torque_global[:,1] = -1 * self.metacentric_length * (torch.sin(pitch) *  self.archimedes_force_global[:,2]) """
+        self.archimedes_torque_global[:,0] = -1 * self.metacentric_width * (torch.sin(roll) * self.archimedes_force_global[:,2])
+        self.archimedes_torque_global[:,1] = -1 * self.metacentric_length * (torch.sin(pitch) *  self.archimedes_force_global[:,2])
 
         self.archimedes_torque_global[:,0] = -1 * self.metacentric_width * (torch.sin(roll) * self.average_buoyancy_force_value)  # cannot multiply by the buoyancy force in isaac sim because of the simulation rate (low then high value)
         self.archimedes_torque_global[:,1] = -1 * self.metacentric_length * (torch.sin(pitch) *  self.average_buoyancy_force_value)
@@ -232,8 +232,8 @@ class HydrodynamicsObject:
         self.archimedes_force_local = torch.bmm(R.mT,torch.unsqueeze(self.archimedes_force_global, 1).mT) #add batch dimension to tensor and transpose it
         self.archimedes_force_local = self.archimedes_force_local.mT.squeeze(1) #remove batch dimension to tensor
 
-        """ self.archimedes_torque_local = torch.bmm(R.mT,torch.unsqueeze(self.archimedes_torque_global, 1).mT)
-        self.archimedes_torque_local = self.archimedes_torque_local.mT.squeeze(1) """
+        self.archimedes_torque_local = torch.bmm(R.mT,torch.unsqueeze(self.archimedes_torque_global, 1).mT)
+        self.archimedes_torque_local = self.archimedes_torque_local.mT.squeeze(1)
         
         #not sure if torque have to be multiply by the rotation matrix also.
         self.archimedes_torque_local = self.archimedes_torque_global

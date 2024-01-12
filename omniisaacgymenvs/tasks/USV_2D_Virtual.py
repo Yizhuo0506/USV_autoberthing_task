@@ -37,6 +37,7 @@ from omniisaacgymenvs.tasks.USV.USV_2D_disturbances import (
 )
 
 from omniisaacgymenvs.envs.USV.Hydrodynamics import *
+from omniisaacgymenvs.envs.USV.ThrusterDynamics import *
 
 from omni.isaac.core.utils.torch.rotations import *
 from omni.isaac.core.utils.prims import get_prim_at_path
@@ -200,7 +201,15 @@ class USV2DVirtual(RLTask):
         #forces to be applied
         self.buoyancy=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
         self.drag=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
-        #self.thrusters=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        self.thrusters=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
+        
+        ##some tests for the thrusters
+
+        self.stop = torch.tensor([0.0, 0.0], device=self._device)
+        self.turn_right = torch.tensor([1.0, -1.0], device=self._device)
+        self.turn_left = torch.tensor([-1.0, 1.0], device=self._device)
+        self.forward = torch.tensor([1.0, 1.0], device=self._device)
+        self.backward= - self.forward
         
         return
 
@@ -225,7 +234,7 @@ class USV2DVirtual(RLTask):
             # RLGames implementation of MultiDiscrete action space requires a tuple of Discrete spaces
             self.action_space = spaces.Tuple([spaces.Discrete(2)] * self._max_actions)
         elif self._discrete_actions == "Continuous":
-            pass
+            self.action_space = spaces.Box(low=np.array([-1.0, -1.0]), high=np.array([1.0, 1.0]), dtype=np.float32)
         elif self._discrete_actions == "Discrete":
             raise NotImplementedError("The Discrete control mode is not supported.")
         else:
@@ -311,7 +320,8 @@ class USV2DVirtual(RLTask):
         scene.add(self._heron)
         scene.add(self._heron.base)
 
-        scene.add(self._heron.thrusters)
+        scene.add(self._heron.thruster_left)
+        scene.add(self._heron.thruster_right)
 
         # Add arrows to scene if task is go to pose
         scene, self._marker = self.task.add_visual_marker_to_scene(scene)
@@ -344,6 +354,7 @@ class USV2DVirtual(RLTask):
     def get_hydrodynamics(self):
         """create physics"""
         self.hydrodynamics=HydrodynamicsObject(self.num_envs, self._device, self.water_density, self.gravity, self.box_width/2, self.box_large/2, self.average_buoyancy_force_value, self.amplify_torque, self.squared_drag_coefficients, self.linear_damping, self.quadratic_damping, self.linear_damping_forward_speed, self.offset_linear_damping, self.offset_lin_forward_damping_speed, self.offset_nonlin_damping, self.scaling_damping, self.offset_added_mass, self.scaling_added_mass, self.alpha,self.last_time )
+        self.thrusters_dynamics=DynamicsFirstOrder(self.num_envs, self._device, self.timeConstant, self.dt,self.numberOfPointsForInterpolation, self.interpolationPointsFromRealData, self.neg_cmd_coeff, self.pos_cmd_coeff, self.cmd_lower_range, self.cmd_upper_range )
 
     def update_state(self) -> None:
         """
@@ -374,6 +385,9 @@ class USV2DVirtual(RLTask):
         self.heading[:, 0] = torch.cos(orient_z)
         self.heading[:, 1] = torch.sin(orient_z)
         
+        #get euler angles       
+        self.get_euler_angles(self.root_quats) #rpy roll pitch yaws
+        
         #body underwater
         self.high_submerged[:]=torch.clamp(self.half_box_size-self.root_pos[:,2], 0, self.box_high)
         self.submerged_volume[:]= torch.clamp(self.high_submerged * self.box_width * self.box_large, 0, self.box_volume)
@@ -386,6 +400,26 @@ class USV2DVirtual(RLTask):
             "linear_velocity": root_velocities[:, :2],
             "angular_velocity": root_velocities[:, -1],
         }
+        
+    def get_euler_angles(self, quaternions):
+        """quaternions to euler"""
+
+        w, x, y, z = quaternions.unbind(dim=1)
+        rotation_matrices = torch.stack([
+        1 - 2*y**2 - 2*z**2, 2*x*y - 2*w*z, 2*x*z + 2*w*y,
+        2*x*y + 2*w*z, 1 - 2*x**2 - 2*z**2, 2*y*z - 2*w*x,
+        2*x*z - 2*w*y, 2*y*z + 2*w*x, 1 - 2*x**2 - 2*y**2
+         ], dim=1).view(-1, 3, 3)
+
+        angle_x = torch.atan2(rotation_matrices[:, 2, 1], rotation_matrices[:, 2, 2])
+        angle_y = torch.asin(-rotation_matrices[:, 2, 0])
+        angle_z = torch.atan2(rotation_matrices[:, 1, 0], rotation_matrices[:, 0, 0])
+        
+        euler = torch.stack((angle_x, angle_y, angle_z), dim=1)
+
+        """quaternions to euler"""
+        self.euler_angles[:,:]=euler
+    
 
     def get_observations(self) -> Dict[str, torch.Tensor]:
         """
@@ -425,7 +459,7 @@ class USV2DVirtual(RLTask):
         actions = actions.clone().to(self._device)
         self.actions = actions
         
-        self.actions = torch.ones_like(self.actions) * 1
+        # self.actions = torch.ones_like(self.actions) * 1.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -433,21 +467,22 @@ class USV2DVirtual(RLTask):
             thrust_cmds = self.actions.float() * 2 - 1
         elif self._discrete_actions == "Continuous":
             # Transform continuous actions to [-1, 1] discrete actions.
-            thrust_cmds = self.actions
+            thrust_cmds = self.actions.float()
         else:
             raise NotImplementedError("")
 
         # Applies the thrust multiplier
-        thrusts = self.virtual_platform.thruster_cfg.thrust_force * thrust_cmds
+        thrusts = thrust_cmds
+        
         # Adds random noise on the actions
         thrusts = self.AN.add_noise_on_act(thrusts)
         # clear actions for reset envs
         thrusts[reset_env_ids] = 0
-        print(self.actions)
-        # If split thrust, equally shares the maximum amount of thrust across thrusters.
-        self.forces = torch.zeros((self._num_envs, self._max_actions, 3), device=self._device)
-        self.forces[:,:,-1] = thrusts
-        print(self.forces)
+        #print(self.actions)
+
+        self.thrusters_dynamics.set_target_force(thrusts) 
+        
+        #print(thrusts)
         self.apply_forces()
         return
 
@@ -480,21 +515,18 @@ class USV2DVirtual(RLTask):
         )
         '''
         # Bouyancy
-        # self.buoyancy[:,:]=self.hydrodynamics.compute_archimedes_metacentric_local(self.submerged_volume, self.euler_angles, self.root_quats)
+        self.buoyancy[:,:]=self.hydrodynamics.compute_archimedes_metacentric_local(self.submerged_volume, self.euler_angles, self.root_quats)
         # Drag force
-        # self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #* self.box_is_under_water[:,:].mT
+        self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #* self.box_is_under_water[:,:].mT
          
-        # self.thrusters[:,:] = self.thrusters_dynamics.update_forces()
+        self.thrusters[:,:] = self.thrusters_dynamics.update_forces()
+        # (self.thrusters)
         # self.thrusters[:,:] *= self.box_is_under_water.mT
 
         self._heron.base.apply_forces_and_torques_at_pos(forces=self.buoyancy[:,:3] + self.drag[:,:3] , torques=self.buoyancy[:,3:] + self.drag[:,3:], is_global=False)
         
-        # self._thrusters_left.apply_forces_and_torques_at_pos(self.thrusters[:,:3],positions=self.left_thruster_position,  is_global=False)
-        # self._thrusters_right.apply_forces_and_torques_at_pos(self.thrusters[:,3:], positions= self.right_thruster_position, is_global=False)
-        
-        self._heron.thrusters.apply_forces_and_torques_at_pos(
-            forces=self.forces, is_global=False
-        )  
+        self._heron.thruster_left.apply_forces_and_torques_at_pos(forces=self.thrusters[:,:3], is_global=False)
+        self._heron.thruster_right.apply_forces_and_torques_at_pos(forces=self.thrusters[:,3:], is_global=False)
 
     def post_reset(self):
         """
