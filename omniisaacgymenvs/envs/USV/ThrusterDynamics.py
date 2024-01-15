@@ -22,7 +22,7 @@ class DynamicsZeroOrder(Dynamics):
         return cmd
 
 class DynamicsFirstOrder(Dynamics):
-    def __init__(self, num_envs, device, timeConstant, dt, numberOfPointsForInterpolation, interpolationPointsFromRealData, coeff_neg_commands, coeff_pos_commands, cmd_lower_range, cmd_upper_range ):
+    def __init__(self, num_envs, device, timeConstant, dt, numberOfPointsForInterpolation, interpolationPointsFromRealData, coeff_neg_commands, coeff_pos_commands, cmd_lower_range, cmd_upper_range):
 
         super().__init__(num_envs, device)
         self.tau = timeConstant

@@ -6,7 +6,7 @@ experiment: USV_2D_Virtual_GoToPose
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:64,${...num_envs}}
+  numEnvs: ${resolve_default:512,${...num_envs}}
   envSpacing: 12
   maxEpisodeLength: 700
   enableDebugVis: False
@@ -202,9 +202,14 @@ dynamics:
       pos_cmd_coeff: [-197.800699, 334.050699, -97.6197902, 7.59341259, -0.0301846154]
   
   damping:
+    # Below is modified parameters from axel's code
     squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 0.001]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 0.001]
+    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1]
+    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 1]
+    # Below is original damping parameters from axel's code
+    #squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
+    #linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 0.001]
+    #quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 0.001]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0
@@ -221,7 +226,7 @@ dynamics:
     mass: 28.0 
     box_width: 1.0
     box_large: 1.40
-    box_high: 0.32
+    box_high: 0.20
 
   acceleration:
     alpha: 0.3

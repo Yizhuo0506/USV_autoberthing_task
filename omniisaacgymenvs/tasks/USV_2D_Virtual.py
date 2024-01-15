@@ -184,9 +184,6 @@ class USV2DVirtual(RLTask):
         self.add_stats(self._penalties.get_stats_name())
         self.add_stats(["normed_linear_vel", "normed_angular_vel", "actions_sum"])
         
-        #forces to be applied
-        self.drag=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
-        
         #obs variables
         self.root_pos = torch.zeros((self._num_envs, 3), device=self._device, dtype=torch.float32)
         self.root_quats = torch.zeros((self._num_envs, 4), device=self._device, dtype=torch.float32)
@@ -196,7 +193,7 @@ class USV2DVirtual(RLTask):
         #volume submerged
         self.high_submerged=torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
         self.submerged_volume=torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
-        self.box_is_under_water = torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
+        # self.box_is_under_water = torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
         
         #forces to be applied
         self.buoyancy=torch.zeros((self._num_envs, 6), device=self._device, dtype=torch.float32)
@@ -353,8 +350,40 @@ class USV2DVirtual(RLTask):
         
     def get_hydrodynamics(self):
         """create physics"""
-        self.hydrodynamics=HydrodynamicsObject(self.num_envs, self._device, self.water_density, self.gravity, self.box_width/2, self.box_large/2, self.average_buoyancy_force_value, self.amplify_torque, self.squared_drag_coefficients, self.linear_damping, self.quadratic_damping, self.linear_damping_forward_speed, self.offset_linear_damping, self.offset_lin_forward_damping_speed, self.offset_nonlin_damping, self.scaling_damping, self.offset_added_mass, self.scaling_added_mass, self.alpha,self.last_time )
-        self.thrusters_dynamics=DynamicsFirstOrder(self.num_envs, self._device, self.timeConstant, self.dt,self.numberOfPointsForInterpolation, self.interpolationPointsFromRealData, self.neg_cmd_coeff, self.pos_cmd_coeff, self.cmd_lower_range, self.cmd_upper_range )
+        self.hydrodynamics=HydrodynamicsObject(
+            num_envs = self.num_envs, 
+            device = self._device, 
+            water_density = self.water_density, 
+            gravity = self.gravity, 
+            metacentric_width = self.box_width/2, 
+            metacentric_length = self.box_large/2, 
+            average_buoyancy_force_value = self.average_buoyancy_force_value, 
+            amplify_torque = self.amplify_torque, 
+            drag_coefficients = self.squared_drag_coefficients, 
+            linear_damping = self.linear_damping, 
+            quadratic_damping = self.quadratic_damping, 
+            linear_damping_forward_speed = self.linear_damping_forward_speed, 
+            offset_linear_damping = self.offset_linear_damping, 
+            offset_lin_forward_damping_speed = self.offset_lin_forward_damping_speed, 
+            offset_nonlin_damping = self.offset_nonlin_damping, 
+            scaling_damping = self.scaling_damping, 
+            offset_added_mass = self.offset_added_mass, 
+            scaling_added_mass = self.scaling_added_mass, 
+            alpha = self.alpha,
+            last_time = self.last_time 
+            )
+        self.thrusters_dynamics=DynamicsFirstOrder(
+            num_envs = self.num_envs, 
+            device = self._device, 
+            timeConstant = self.timeConstant, 
+            dt = self.dt,
+            numberOfPointsForInterpolation = self.numberOfPointsForInterpolation, 
+            interpolationPointsFromRealData = self.interpolationPointsFromRealData, 
+            coeff_neg_commands = self.neg_cmd_coeff, 
+            coeff_pos_commands = self.pos_cmd_coeff, 
+            cmd_lower_range = self.cmd_lower_range, 
+            cmd_upper_range = self.cmd_upper_range 
+            )
 
     def update_state(self) -> None:
         """
@@ -459,7 +488,8 @@ class USV2DVirtual(RLTask):
         actions = actions.clone().to(self._device)
         self.actions = actions
         
-        # self.actions = torch.ones_like(self.actions) * 1.0
+        # For debug, set actions
+        #self.actions = torch.ones_like(self.actions) * 0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -518,12 +548,15 @@ class USV2DVirtual(RLTask):
         self.buoyancy[:,:]=self.hydrodynamics.compute_archimedes_metacentric_local(self.submerged_volume, self.euler_angles, self.root_quats)
         # Drag force
         self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #* self.box_is_under_water[:,:].mT
-         
+        
         self.thrusters[:,:] = self.thrusters_dynamics.update_forces()
         # (self.thrusters)
         # self.thrusters[:,:] *= self.box_is_under_water.mT
 
-        self._heron.base.apply_forces_and_torques_at_pos(forces=self.buoyancy[:,:3] + self.drag[:,:3] , torques=self.buoyancy[:,3:] + self.drag[:,3:], is_global=False)
+        self._heron.base.apply_forces_and_torques_at_pos(forces=self.buoyancy[:,:3] + self.drag[:,:3], torques=self.buoyancy[:,3:] + self.drag[:,3:], is_global=False)
+        #self._heron.base.apply_forces_and_torques_at_pos(forces=self.buoyancy[:,:3], torques=self.buoyancy[:,3:], is_global=False)
+        # print drag = self.drag
+        # print ("drag: ", self.drag)
         
         self._heron.thruster_left.apply_forces_and_torques_at_pos(forces=self.thrusters[:,:3], is_global=False)
         self._heron.thruster_right.apply_forces_and_torques_at_pos(forces=self.thrusters[:,3:], is_global=False)
@@ -595,7 +628,7 @@ class USV2DVirtual(RLTask):
         num_resets = len(env_ids)
         # Resets the counter of steps for which the goal was reached
         self.task.reset(env_ids)
-        self.virtual_platform.randomize_thruster_state(env_ids, num_resets)
+        # self.virtual_platform.randomize_thruster_state(env_ids, num_resets)
         # Randomizes the starting position of the platform within a disk around the target
         root_pos = torch.zeros_like(self.root_pos)
         root_pos[env_ids, :2] = positions

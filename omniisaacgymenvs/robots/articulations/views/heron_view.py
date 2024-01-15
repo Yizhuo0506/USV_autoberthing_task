@@ -43,11 +43,11 @@ class HeronView(ArticulationView):
         super().__init__(
             prim_paths_expr=prim_paths_expr,
             name=name,
+            reset_xform_properties=False
         )
-        self.base = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/base_link",
-                                        name="base_view")
+        self.base = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/base_link", name="base_view", reset_xform_properties=False)
         
-        self.thruster_left = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/thruster_left", name="thruster_left")
-        self.thruster_right = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/thruster_right", name="thruster_right")
+        self.thruster_left = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/thruster_left", name="thruster_left", reset_xform_properties=False)
+        self.thruster_right = RigidPrimView(prim_paths_expr=f"/World/envs/.*/heron/thruster_right", name="thruster_right", reset_xform_properties=False)
         
         

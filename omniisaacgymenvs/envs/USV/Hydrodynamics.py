@@ -4,7 +4,7 @@ from omniisaacgymenvs.envs.USV.Utils import *
         
 class HydrodynamicsObject:
 
-    def __init__(self, num_envs, device, water_density, gravity, metacentric_width, metacentric_length, average_buoyancy_force_value, amplify_torque, drag_coefficients, linear_damping, quadratic_damping, linear_damping_forward_speed, offset_linear_damping, offset_lin_forward_damping_speed, offset_nonlin_damping, scaling_damping, offset_added_mass, scaling_added_mass, alpha, last_time ):
+    def __init__(self, num_envs, device, water_density, gravity, metacentric_width, metacentric_length, average_buoyancy_force_value, amplify_torque, drag_coefficients, linear_damping, quadratic_damping, linear_damping_forward_speed, offset_linear_damping, offset_lin_forward_damping_speed, offset_nonlin_damping, scaling_damping, offset_added_mass, scaling_added_mass, alpha, last_time):
             
         self._num_envs = num_envs
         self.device = device
@@ -71,6 +71,7 @@ class HydrodynamicsObject:
        
         self.drag[:,:3]= - (self.drag_coefficients[:,:3].mT * torch.abs(local_lin_velocities).mT * local_lin_velocities.mT).mT
         self.drag[:, 3:]= - (self.drag_coefficients[:,3:].mT * torch.abs(local_ang_velocities).mT * local_ang_velocities.mT).mT
+        #print ("drag: ", self.drag)
 
         return self.drag
     
@@ -83,13 +84,14 @@ class HydrodynamicsObject:
         // matrix Drb
         """
 
-        lin_damp =  (self.linear_damping+ self.offset_linear_damping - (self.linear_damping_forward_speed + self.offset_lin_forward_damping_speed))        
-
-        quad_damp =  ((self.quadratic_damping + self.offset_nonlin_damping).mT * torch.abs(vel.mT)).mT
-
+        lin_damp = (self.linear_damping+ self.offset_linear_damping - (self.linear_damping_forward_speed + self.offset_lin_forward_damping_speed))        
+        #print("lin_damp: ", lin_damp)
+        quad_damp = ((self.quadratic_damping + self.offset_nonlin_damping).mT * torch.abs(vel.mT)).mT
+        #print("quad_damp: ", quad_damp)
         # scaling and adding both matrices 
-        self.drag[:,:] = (lin_damp + quad_damp) * self.scaling_damping
-        return self.drag
+        damping_matrix = (lin_damp + quad_damp) * self.scaling_damping
+        #print("damping_matrix: ", damping_matrix)
+        return damping_matrix
     
     """ 
     def GetAddedMass(self):
@@ -157,13 +159,13 @@ class HydrodynamicsObject:
         # Update added Coriolis matrix
         #self.ComputeAddedCoriolisMatrix(self.local_velocities)
         # Update damping matrix
-        self.ComputeDampingMatrix(self.local_velocities)
+        damping_matrix = self.ComputeDampingMatrix(self.local_velocities)
         # Filter acceleration (see issue explanation above)
         #self.ComputeAcc(self.local_velocities, time, self.alpha)
         # We can now compute the additional forces/torques due to this dynamic
         # effects based on Eq. 8.136 on p.222 of Fossen: Handbook of Marine Craft ...
         # Damping forces and torques
-        damping =  -self.drag * self.local_velocities 
+        self.drag =  -1 * damping_matrix * self.local_velocities
         # Added-mass forces and torques
         #added = torch.matmul(-self.GetAddedMass(), self._filtered_acc)
         #reshaped_added_tensor = torch.cat((added, torch.zeros(3 * 6 - len(added))), dim=0).view(3, 6)
@@ -182,7 +184,7 @@ class HydrodynamicsObject:
         #tau = damping + reshaped_added_tensor + cor
         
         #print("tau: ", tau)
-        return damping
+        return self.drag
 
     def compute_archimedes_metacentric_global(self, submerged_volume, rpy):
         

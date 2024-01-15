@@ -8,7 +8,6 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
-
 from omniisaacgymenvs.tasks.USV.USV_2D_core import (
     Core,
     parse_data_dict,
