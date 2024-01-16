@@ -44,7 +44,8 @@ import datetime
 import os
 import torch
 
-class RLGTrainer():
+
+class RLGTrainer:
     def __init__(self, cfg, cfg_dict):
         self.cfg = cfg
         self.cfg_dict = cfg_dict
@@ -55,12 +56,15 @@ class RLGTrainer():
         self.cfg_dict["task"]["test"] = self.cfg.test
 
         # register the rl-games adapter to use inside the runner
-        vecenv.register('RLGPU',
-                        lambda config_name, num_actors, **kwargs: RLGPUEnv(config_name, num_actors, **kwargs))
-        env_configurations.register('rlgpu', {
-            'vecenv_type': 'RLGPU',
-            'env_creator': lambda **kwargs: env
-        })
+        vecenv.register(
+            "RLGPU",
+            lambda config_name, num_actors, **kwargs: RLGPUEnv(
+                config_name, num_actors, **kwargs
+            ),
+        )
+        env_configurations.register(
+            "rlgpu", {"vecenv_type": "RLGPU", "env_creator": lambda **kwargs: env}
+        )
 
         self.rlg_config_dict = omegaconf_to_dict(self.cfg.train)
 
@@ -70,33 +74,39 @@ class RLGTrainer():
         runner.load(self.rlg_config_dict)
         runner.reset()
 
-        print(f' Experiment name: {self.cfg.train.params.config.name}')
+        print(f" Experiment name: {self.cfg.train.params.config.name}")
         # dump config dict
-        experiment_dir = os.path.join('runs', self.cfg.train.params.config.name)
+        experiment_dir = os.path.join("runs", self.cfg.train.params.config.name)
         os.makedirs(experiment_dir, exist_ok=True)
-        with open(os.path.join(experiment_dir, 'config.yaml'), 'w') as f:
+        with open(os.path.join(experiment_dir, "config.yaml"), "w") as f:
             f.write(OmegaConf.to_yaml(self.cfg))
 
-        runner.run({
-            'train': not self.cfg.test,
-            'play': self.cfg.test,
-            'checkpoint': self.cfg.checkpoint,
-            'sigma': None
-        })
+        runner.run(
+            {
+                "train": not self.cfg.test,
+                "play": self.cfg.test,
+                "checkpoint": self.cfg.checkpoint,
+                "sigma": None,
+            }
+        )
 
 
 @hydra.main(config_name="config", config_path="../cfg")
 def parse_hydra_configs(cfg: DictConfig):
-
     time_str = datetime.datetime.now().strftime("%Y-%m-%d_%H-%M-%S")
 
     headless = cfg.headless
     rank = int(os.getenv("LOCAL_RANK", "0"))
     if cfg.multi_gpu:
         cfg.device_id = rank
-        cfg.rl_device = f'cuda:{rank}'
+        cfg.rl_device = f"cuda:{rank}"
     enable_viewport = "enable_cameras" in cfg.task.sim and cfg.task.sim.enable_cameras
-    env = VecEnvRLGames(headless=headless, sim_device=cfg.device_id, enable_livestream=cfg.enable_livestream, enable_viewport=enable_viewport)
+    env = VecEnvRLGames(
+        headless=headless,
+        sim_device=cfg.device_id,
+        enable_livestream=cfg.enable_livestream,
+        enable_viewport=enable_viewport,
+    )
 
     # ensure checkpoints can be specified as relative paths
     if cfg.checkpoint:
@@ -109,8 +119,9 @@ def parse_hydra_configs(cfg: DictConfig):
 
     # sets seed. if seed is -1 will pick a random one
     from omni.isaac.core.utils.torch.maths import set_seed
+
     cfg.seed = set_seed(cfg.seed, torch_deterministic=cfg.torch_deterministic)
-    cfg_dict['seed'] = cfg.seed
+    cfg_dict["seed"] = cfg.seed
 
     task = initialize_task(cfg_dict, env)
 
@@ -130,7 +141,6 @@ def parse_hydra_configs(cfg: DictConfig):
             resume="allow",
         )
 
-
     rlg_trainer = RLGTrainer(cfg, cfg_dict)
     rlg_trainer.launch_rlg_hydra(env)
     rlg_trainer.run()
@@ -140,5 +150,5 @@ def parse_hydra_configs(cfg: DictConfig):
         wandb.finish()
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     parse_hydra_configs()

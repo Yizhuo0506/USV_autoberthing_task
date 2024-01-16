@@ -120,11 +120,10 @@ class USV2DVirtual(RLTask):
         #boxes dimension to compute buoyancy forces and torques
         self.box_density=self._task_cfg["dynamics"]["buoyancy"]["material_density"]
         self.box_width=self._task_cfg["dynamics"]["buoyancy"]["box_width"]
-        self.box_large=self._task_cfg["dynamics"]["buoyancy"]["box_large"]
-        self.box_high=self._task_cfg["dynamics"]["buoyancy"]["box_high"]
-        self.box_volume=self.box_width*self.box_large*self.box_high
+        self.box_length=self._task_cfg["dynamics"]["buoyancy"]["box_length"]
+        self.box_height=self._task_cfg["dynamics"]["buoyancy"]["box_height"]
+        self.box_volume=self.box_width*self.box_length*self.box_height
         self.box_mass=self._task_cfg["dynamics"]["buoyancy"]["mass"]
-        self.half_box_size=self.box_high/2
         
         #thrusters dynamics
             #interpolation
@@ -356,7 +355,7 @@ class USV2DVirtual(RLTask):
             water_density = self.water_density, 
             gravity = self.gravity, 
             metacentric_width = self.box_width/2, 
-            metacentric_length = self.box_large/2, 
+            metacentric_length = self.box_length/2, 
             average_buoyancy_force_value = self.average_buoyancy_force_value, 
             amplify_torque = self.amplify_torque, 
             drag_coefficients = self.squared_drag_coefficients, 
@@ -418,8 +417,8 @@ class USV2DVirtual(RLTask):
         self.get_euler_angles(self.root_quats) #rpy roll pitch yaws
         
         #body underwater
-        self.high_submerged[:]=torch.clamp(self.half_box_size-self.root_pos[:,2], 0, self.box_high)
-        self.submerged_volume[:]= torch.clamp(self.high_submerged * self.box_width * self.box_large, 0, self.box_volume)
+        self.high_submerged[:]=torch.clamp((self.box_height/2) -self.root_pos[:,2], 0, self.box_height)
+        self.submerged_volume[:]= torch.clamp(self.high_submerged * self.box_width * self.box_length, 0, self.box_volume)
         self.box_is_under_water = torch.where(self.high_submerged[:] > 0,1.0,0.0 ).unsqueeze(0)
         
         # Dump to state

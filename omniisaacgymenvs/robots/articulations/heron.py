@@ -47,11 +47,10 @@ class Heron(Robot):
         usd_path: Optional[str] = None,
         translation: Optional[np.ndarray] = None,
         orientation: Optional[np.ndarray] = None,
-        scale: Optional[np.array] = None
+        scale: Optional[np.array] = None,
     ) -> None:
-        """[summary]
-        """
-        
+        """[summary]"""
+
         self._usd_path = "/home/junghwan/RANS/omniisaacgymenvs/robots/usd/heron.usd"
         self._name = name
 
@@ -69,5 +68,5 @@ class Heron(Robot):
             name=name,
             translation=translation,
             orientation=orientation,
-            scale=scale
+            scale=scale,
         )
