@@ -42,7 +42,7 @@ class GoToXYReward:
         Defines the function used to compute the reward for the GoToXY task."""
 
         if self.reward_mode.lower() == "linear":
-            position_reward = 1.0 / (1.0 + position_error)
+            position_reward = -1 + (1.0 / (1.0 + position_error))
         elif self.reward_mode.lower() == "square":
             position_reward = 1.0 / (1.0 + position_error * position_error)
         elif self.reward_mode.lower() == "exponential":
