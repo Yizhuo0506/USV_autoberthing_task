@@ -22,7 +22,7 @@ class Core:
         self._num_envs = num_envs
         self._device = device
 
-        # Dimensions of the observation tensors
+        # Dimensions of the observation tensors (default: world frame)
         self._dim_orientation: 2  # theta heading in the world frame (cos(theta), sin(theta)) [0:2]
         self._dim_velocity: 2  # velocity in the world (x_dot, y_dot) [2:4]
         self._dim_omega: 1  # rotation velocity (theta_dot) [4]
@@ -43,15 +43,46 @@ class Core:
             (self._num_envs, 4), device=self._device, dtype=torch.float32
         )
 
-    def update_observation_tensor(self, current_state: dict) -> torch.Tensor:
+    def update_observation_tensor(
+        self, current_state: dict, observation_frame: str
+    ) -> torch.Tensor:
         """
         Updates the observation tensor with the current state of the robot."""
 
-        self._obs_buffer[:, 0:2] = current_state["orientation"]
-        self._obs_buffer[:, 2:4] = current_state["linear_velocity"]
-        self._obs_buffer[:, 4] = current_state["angular_velocity"]
-        self._obs_buffer[:, 5] = self._task_label
-        self._obs_buffer[:, 6:10] = self._task_data
+        if observation_frame == "world":
+            self._obs_buffer[:, 0:2] = current_state["orientation"]
+            self._obs_buffer[:, 2:4] = current_state["linear_velocity"]
+            self._obs_buffer[:, 4] = current_state["angular_velocity"]
+            self._obs_buffer[:, 5] = self._task_label
+            self._obs_buffer[:, 6:10] = self._task_data
+        elif observation_frame == "local":
+            # TODO: implement local frame
+            self._obs_buffer[:, 0:2] = torch.tensor([0, 0], device=self._device)
+            # self._obs_buffer[:, 0:2] = current_state["orientation"]
+
+            cos_theta = current_state["orientation"][:, 0]
+            sin_theta = current_state["orientation"][:, 1]
+            # Linear velocity in the local frame
+            self._obs_buffer[:, 2] = (
+                cos_theta * current_state["linear_velocity"][:, 0]
+                + sin_theta * current_state["linear_velocity"][:, 1]
+            )
+            self._obs_buffer[:, 3] = (
+                -sin_theta * current_state["linear_velocity"][:, 0]
+                + cos_theta * current_state["linear_velocity"][:, 1]
+            )
+
+            self._obs_buffer[:, 4] = current_state["angular_velocity"]
+            self._obs_buffer[:, 5] = self._task_label
+
+            # Position error in local frame
+            self._obs_buffer[:, 6] = (
+                cos_theta * self._task_data[:, 0] + sin_theta * self._task_data[:, 1]
+            )
+            self._obs_buffer[:, 7] = (
+                -sin_theta * self._task_data[:, 0] + cos_theta * self._task_data[:, 1]
+            )
+
         return self._obs_buffer
 
     def create_stats(self, stats: dict) -> dict:

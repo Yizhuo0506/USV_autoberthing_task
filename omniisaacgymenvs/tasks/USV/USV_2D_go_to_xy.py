@@ -71,13 +71,15 @@ class GoToXYTask(Core):
             stats["boundary_dist"] = torch_zeros()
         return stats
 
-    def get_state_observations(self, current_state: dict) -> torch.Tensor:
+    def get_state_observations(
+        self, current_state: dict, observation_frame: str
+    ) -> torch.Tensor:
         """
         Computes the observation tensor from the current state of the robot."""
 
         self._position_error = self._target_positions - current_state["position"]
         self._task_data[:, :2] = self._position_error
-        return self.update_observation_tensor(current_state)
+        return self.update_observation_tensor(current_state, observation_frame)
 
     def compute_reward(
         self, current_state: torch.Tensor, actions: torch.Tensor
@@ -117,7 +119,8 @@ class GoToXYTask(Core):
             self.position_dist > self._task_parameters.kill_dist, ones, die
         )
         die = torch.where(
-            self._goal_reached > self._task_parameters.kill_after_n_steps_in_tolerance,
+            self._goal_reached
+            >= self._task_parameters.kill_after_n_steps_in_tolerance,  # self._goal_reached > self._task_parameters.kill_after_n_steps_in_tolerance,
             ones,
             die,
         )

@@ -271,6 +271,11 @@ class Penalties:
                 [actions.shape[0]], dtype=torch.float32, device=actions.device
             )
 
+        # print penalties
+        # print("linear_vel_penalty: ", self.linear_vel_penalty)
+        # print("angular_vel_penalty: ", self.angular_vel_penalty)
+        # print("energy_penalty: ", self.energy_penalty)
+
         return self.linear_vel_penalty + self.angular_vel_penalty + self.energy_penalty
 
     def get_stats_name(self) -> list:
