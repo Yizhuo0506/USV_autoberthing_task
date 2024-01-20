@@ -251,7 +251,7 @@ class MFP2DVirtual(RLTask):
         # Add arrows to scene if task is go to pose
         scene, self._marker = self.task.add_visual_marker_to_scene(scene)
         return
-    
+
     def get_floating_platform(self):
         """
         Adds the floating platform to the scene."""
