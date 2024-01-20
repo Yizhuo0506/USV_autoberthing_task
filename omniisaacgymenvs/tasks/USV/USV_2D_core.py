@@ -82,6 +82,8 @@ class Core:
             self._obs_buffer[:, 7] = (
                 -sin_theta * self._task_data[:, 0] + cos_theta * self._task_data[:, 1]
             )
+            self._obs_buffer[:, 8] = self._task_data[:, 2]
+            self._obs_buffer[:, 9] = self._task_data[:, 3]
 
         return self._obs_buffer
 

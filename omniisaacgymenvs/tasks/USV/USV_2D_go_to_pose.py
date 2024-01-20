@@ -74,7 +74,9 @@ class GoToPoseTask(Core):
             stats["heading_error"] = torch_zeros()
         return stats
 
-    def get_state_observations(self, current_state: dict) -> torch.Tensor:
+    def get_state_observations(
+        self, current_state: dict, observation_frame: str
+    ) -> torch.Tensor:
         """
         Computes the observation tensor from the current state of the robot.""" ""
 
@@ -92,7 +94,7 @@ class GoToPoseTask(Core):
         self._task_data[:, :2] = self._position_error
         self._task_data[:, 2] = torch.cos(self._heading_error)
         self._task_data[:, 3] = torch.sin(self._heading_error)
-        return self.update_observation_tensor(current_state)
+        return self.update_observation_tensor(current_state, observation_frame)
 
     def compute_reward(
         self, current_state: torch.Tensor, actions: torch.Tensor

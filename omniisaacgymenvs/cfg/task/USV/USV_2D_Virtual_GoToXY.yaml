@@ -81,6 +81,7 @@ env:
     min_spawn_dist: 0.5
     kill_dist: 8.0
     boundary_cost: 25
+    goal_reward: 100
 
   reward_parameters:
     name: GoToXY
@@ -203,8 +204,8 @@ dynamics:
   damping:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 1]
+    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1.0]
+    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 1.0]
     # Below is original damping parameters from axel's code
     #squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
     #linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 0.001]

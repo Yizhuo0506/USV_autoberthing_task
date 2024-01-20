@@ -25,6 +25,7 @@ class GoToXYParameters:
     min_spawn_dist: float = 3.0
     kill_dist: float = 8.0
     boundary_cost: float = 25
+    goal_reward: float = 100.0
 
     spawn_curriculum: bool = False
     spawn_curriculum_min_dist: float = 0.5

@@ -107,6 +107,11 @@ class GoToXYTask(Core):
             current_state, actions, self.position_dist
         )
 
+        # Add reward for reaching the goal
+        self.position_reward += (
+            self._goal_reached * self._task_parameters.goal_reward
+        ).float()
+
         return self.position_reward
 
     def update_kills(self) -> torch.Tensor:
