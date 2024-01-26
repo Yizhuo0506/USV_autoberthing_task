@@ -406,71 +406,40 @@ class VirtualPlatform:
         self.transforms2D[env_ids] = transforms2D[env_ids]
 
     def visualize(self, save_path: str = None):
-        """
-        Visualizes the thruster configuration."""
-
         from matplotlib import pyplot as plt
         from matplotlib import cm
         import numpy as np
 
-        # Creates a list of color
+        grid_size = int(np.ceil(np.sqrt(self._num_envs)))
+        fig, axs = plt.subplots(grid_size, grid_size, figsize=(20, 20))
+
+        # Ensure axs is always a 2D array
+        axs = np.atleast_2d(axs)
+
         cmap = cm.get_cmap("hsv")
-        colors = []
-        for i in range(self._max_thrusters):
-            colors.append(cmap(i / self._max_thrusters))
+        colors = [cmap(i / self._max_thrusters) for i in range(self._max_thrusters)]
 
-        # Split into 1/4th of the envs, so that we can visualize all the configs in use_four_configuration mode.
-        env_ids = [
-            0,
-            1,
-            2,
-            3,
-            self._num_envs // 4,
-            self._num_envs // 4 + 1,
-            self._num_envs // 4 + 2,
-            self._num_envs // 4 + 3,
-            2 * self._num_envs // 4,
-            2 * self._num_envs // 4 + 1,
-            2 * self._num_envs // 4 + 2,
-            2 * self._num_envs // 4 + 3,
-            3 * self._num_envs // 4,
-            3 * self._num_envs // 4 + 1,
-            3 * self._num_envs // 4 + 2,
-            3 * self._num_envs // 4 + 3,
-        ]
+        env_ids = [0, 1, 2, 3, self._num_envs // 4, self._num_envs // 4 + 1, ... ]
 
-        # Generates a thrust on all the thrusters
-        forces = torch.ones(
-            (self._num_envs, self._max_thrusters),
-            device=self._device,
-            dtype=torch.float32,
-        )
-        # Project
+        forces = torch.ones((self._num_envs, self._max_thrusters), device=self._device, dtype=torch.float32)
         p, f = self.project_forces(forces)
-        # Reshape and get only the 2D values for plot.
         p = p.reshape(self._num_envs, self._max_thrusters, 3)[:, :, :2]
         f = f.reshape(self._num_envs, self._max_thrusters, 3)[:, :, :2]
         p = np.array(p.cpu())
         f = np.array(f.cpu())
 
-        # Plot
-        fig, axs = plt.subplots(4, 4)
-        fig.set_size_inches(20, 20)
-        for i in range(4):
-            for j in range(4):
-                idx = env_ids[i * 4 + j]
-                axs[i, j].quiver(
-                    p[idx, :, 0],
-                    p[idx, :, 1],
-                    f[idx, :, 0],
-                    f[idx, :, 1],
-                    color=colors,
-                    scale=4,
-                    scale_units="xy",
-                    angles="xy",
-                )
-                axs[i, j].set_xlim([-0.75, 0.75])
-                axs[i, j].set_ylim([-0.75, 0.75])
+        for i in range(grid_size):
+            for j in range(grid_size):
+                idx = i * grid_size + j
+                if idx < self._num_envs:
+                    ax = axs[i, j]
+                    ax.quiver(p[idx, :, 0], p[idx, :, 1], f[idx, :, 0], f[idx, :, 1], color=colors, scale=4, scale_units="xy", angles="xy")
+                    ax.set_xlim([-0.75, 0.75])
+                    ax.set_ylim([-0.75, 0.75])
+                else:
+                    axs[i, j].axis('off')
+
         fig.tight_layout()
-        fig.savefig(save_path, dpi=300)
+        if save_path:
+            fig.savefig(save_path, dpi=300)
         plt.close()

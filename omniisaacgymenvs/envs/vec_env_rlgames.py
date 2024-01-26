@@ -92,7 +92,6 @@ class VecEnvRLGames(VecEnvBase):
             self._task.apply_forces()
             self._world.step(render=False)
             self._task.update_state()
-            # self._task.apply_forces()  # Here is previous position of apply_forces
             self.sim_frame_count += 1
 
         self._world.step(render=self._render)

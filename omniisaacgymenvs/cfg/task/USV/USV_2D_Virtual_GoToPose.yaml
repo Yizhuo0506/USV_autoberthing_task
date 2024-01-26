@@ -49,9 +49,9 @@ env:
 
     observations:
       # Add noisy observations
-      add_noise_on_pos: False 
-      position_noise_min: -0.01 
-      position_noise_max:  0.01
+      add_noise_on_pos: False
+      position_noise_min: -0.01 # default - 0.01 
+      position_noise_max:  0.01 # default - 0.01 
       add_noise_on_vel: False
       velocity_noise_min: -0.01
       velocity_noise_max:  0.01
@@ -203,7 +203,7 @@ dynamics:
       neg_cmd_coeff: [88.61013986, 163.99545455, 76.81641608, 11.9476958, 0.20374615]
       pos_cmd_coeff: [-197.800699, 334.050699, -97.6197902, 7.59341259, -0.0301846154]
   
-  damping:
+  hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
     linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1.0]
@@ -220,8 +220,8 @@ dynamics:
     offset_added_mass: 0.0
     scaling_added_mass: 1.0
 
-  buoyancy:
-    average_buoyancy_force_value: 10
+  hydrostatics:
+    average_hydrostatics_force_value: 10
     amplify_torque: 20
     material_density: 133
     water_density: 1000
