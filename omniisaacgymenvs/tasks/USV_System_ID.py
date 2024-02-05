@@ -46,6 +46,7 @@ from omni.isaac.core.utils.prims import get_prim_at_path
 from typing import Dict, List, Tuple
 
 import numpy as np
+import pandas as pd
 import omni
 import time
 import math
@@ -80,7 +81,12 @@ class USVSystemID(RLTask):
         self._discrete_actions = self._task_cfg["env"]["action_mode"]
         self._observation_frame = self._task_cfg["env"]["observation_frame"]
         self._device = self._cfg["sim_device"]
+        self._task_name = self._task_cfg[
+            "task_name"
+        ]  # Acceleration, Circle, Round, ZigZag
         self.step = 0
+        # Initialize a list to store observations and progress times
+        self.observation_data = []
 
         # Split the maximum amount of thrust across all thrusters.
         self.split_thrust = self._task_cfg["env"]["split_thrust"]
@@ -558,6 +564,15 @@ class USVSystemID(RLTask):
 
         observations = {self._heron.name: {"obs_buf": self.obs_buf}}
 
+        # Structure to capture current observation and progress time
+        current_data = {
+            "progress_time": self.progress_buf.cpu().numpy().tolist(),
+            "observations": {
+                key: value.cpu().numpy().tolist() for key, value in self.obs_buf.items()
+            },
+        }
+        self.observation_data.append(current_data)
+
         # Debug : observations
         # print(f"self.obs_buf: {self.obs_buf}")
         return observations
@@ -582,7 +597,88 @@ class USVSystemID(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        self.actions = torch.ones_like(self.actions) * 0
+        # self.actions = torch.ones_like(self.actions) * 0
+        sim_freq = 10  # Hz
+
+        if self._task_name == "Acceleration":
+            if self.progress_buf[0] < sim_freq * 60:
+                self.actions = torch.ones_like(self.actions) * 1
+            else:
+                self.actions = torch.ones_like(self.actions) * 0
+        elif self._task_name == "Circle":
+            if self.progress_buf[0] < sim_freq * 20:
+                # Full throttle to initiate the circle
+                self.actions = torch.ones_like(self.actions) * 1
+            elif self.progress_buf[0] < sim_freq * 50:
+                # Adjust to maintain the circle, possibly by modulating thrust
+                # This could be a static value or dynamically adjusted based on feedback
+                self.actions = torch.torch.tensor(
+                    [[-1, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            else:
+                self.actions = torch.ones_like(self.actions) * 0
+        elif self._task_name == "Round":
+            if self.progress_buf[0] < sim_freq * 20:
+                self.actions = torch.ones_like(self.actions) * 1
+            elif self.progress_buf[0] < sim_freq * 50:
+                self.actions = torch.torch.tensor(
+                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            else:
+                self.actions = torch.ones_like(self.actions) * 0
+        elif self._task_name == "ZigZag":
+            zigzag_time = 3.0  # sec
+            if self.progress_buf[0] < sim_freq * 20:
+                # print("Preparing ZigZag, 20 sec of full throttle.")
+                self.actions = torch.ones_like(self.actions) * 1
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time:
+                # print("1st left turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 2:
+                # print("1st right turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 3:
+                # print("2nd left turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 4:
+                # print("2nd right turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 5:
+                # print("3rd left turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 6:
+                # print("3rd right turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 7:
+                # print("4th left turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 8:
+                # print("4th right turn, 3 sec")
+                self.actions = torch.torch.tensor(
+                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                )
+            else:
+                self.actions = torch.ones_like(self.actions) * 0
+        else:
+            raise NotImplementedError("The requested task is not supported.")
+
+        if self.progress_buf[0] == sim_freq * 70:
+            self.save_observation_data("results.csv")
+            print("Observation data saved to results.csv")
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -596,6 +692,8 @@ class USVSystemID(RLTask):
 
         # Applies the thrust multiplier
         thrusts = thrust_cmds
+        # Debug : thrust commands
+        # print(f"thrusts: {thrusts}")
 
         # Adds random noise on the actions
         thrusts = self.AN.add_noise_on_act(thrusts)
@@ -637,10 +735,10 @@ class USVSystemID(RLTask):
         )
         """
         # Hydrostatic force
-        self.hydrostatic_force[
-            :, :
-        ] = self.hydrostatics.compute_archimedes_metacentric_local(
-            self.submerged_volume, self.euler_angles, self.root_quats
+        self.hydrostatic_force[:, :] = (
+            self.hydrostatics.compute_archimedes_metacentric_local(
+                self.submerged_volume, self.euler_angles, self.root_quats
+            )
         )
         # Hydrodynamic forces
         self.drag[:, :] = self.hydrodynamics.ComputeHydrodynamicsEffects(
@@ -855,3 +953,12 @@ class USVSystemID(RLTask):
         self.reset_buf[:] = torch.where(
             self.progress_buf >= self._max_episode_length - 1, ones, die
         )
+
+    def save_observation_data(self, file_path):
+
+        # Convert the list of dictionaries to a pandas DataFrame
+        # Note: This step may need customization based on the structure of your observations
+        df = pd.DataFrame(self.observation_data)
+
+        # Save the DataFrame as a CSV file
+        df.to_csv(file_path, index=False)

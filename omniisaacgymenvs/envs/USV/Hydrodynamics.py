@@ -193,7 +193,7 @@ class HydrodynamicsObject:
         self.local_velocities = torch.hstack(
             [self.local_lin_velocities, self.local_ang_velocities]
         )
-        print(world_vel[:, :3])
+
         if use_water_current:
             flow_vel = torch.tensor(flow_vel, device=self.device)
 

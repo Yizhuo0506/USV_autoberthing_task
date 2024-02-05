@@ -3,13 +3,13 @@ name: USVSystemID
 
 physics_engine: ${..physics_engine}
 experiment: USV_System_ID
-task: Acceleration # Acceleration, Circle, ZigZag
+task_name: ZigZag # Acceleration, Circle, Round, ZigZag
 
 # if given, will override the device setting in gym. 
 env:
   numEnvs: ${resolve_default:512,${...num_envs}}
   envSpacing: 12
-  maxEpisodeLength: 1000
+  maxEpisodeLength: 99999
   enableDebugVis: False
   action_mode: Continuous
   numQuantizedActions: 1
@@ -17,7 +17,7 @@ env:
 
   observation_frame: "local"
 
-  controlFrequencyInv: 10
+  controlFrequencyInv: 5
 
   clipObservations: {state: 8.0}
   clipActions: 1.0
@@ -86,7 +86,7 @@ env:
     kill_after_n_steps_in_tolerance: 1 # 50 default = 10seconds
     max_spawn_dist: 4.5
     min_spawn_dist: 0.5
-    kill_dist: 1000
+    kill_dist: 10000
     boundary_cost: 25
     goal_reward: 100
 
@@ -210,9 +210,9 @@ dynamics:
   
   hydrodynamics:
     # Below is modified parameters from axel's code
-    squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1.0]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 1.0]
+    squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 3.0]
+    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 10.0]
+    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 10.0]
     # Below is original damping parameters from axel's code
     #squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
     #linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 0.001]
