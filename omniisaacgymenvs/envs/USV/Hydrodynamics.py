@@ -177,7 +177,9 @@ class HydrodynamicsObject:
 
         """
 
-    def ComputeHydrodynamicsEffects(self, time, quaternions, world_vel):
+    def ComputeHydrodynamicsEffects(
+        self, time, quaternions, world_vel, use_water_current, flow_vel
+    ):
         rot_mat = pytorch3d.transforms.quaternion_to_matrix(quaternions)
         rot_mat_inv = rot_mat.mT
 
@@ -191,6 +193,21 @@ class HydrodynamicsObject:
         self.local_velocities = torch.hstack(
             [self.local_lin_velocities, self.local_ang_velocities]
         )
+        print(world_vel[:, :3])
+        if use_water_current:
+            flow_vel = torch.tensor(flow_vel, device=self.device)
+
+            if flow_vel.dim() == 1:
+                flow_vel = flow_vel.unsqueeze(0).expand_as(world_vel[:, :3])
+
+            self.local_flow_vel = getLocalLinearVelocities(flow_vel, rot_mat_inv)
+            self.relative_lin_velocities = (
+                getLocalLinearVelocities(world_vel[:, :3], rot_mat_inv)
+                - self.local_flow_vel
+            )
+            self.local_velocities = torch.hstack(
+                [self.relative_lin_velocities, self.local_ang_velocities]
+            )
 
         # Update added Coriolis matrix
         # self.ComputeAddedCoriolisMatrix(self.local_velocities)
