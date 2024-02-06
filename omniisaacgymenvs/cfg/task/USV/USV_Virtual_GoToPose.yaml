@@ -27,7 +27,7 @@ env:
   wind:
 
   water_current:
-    use_water_current: True
+    use_water_current: False
     flow_velocity: [2.0, 0.0, 0.0] # x, y, z
 
   disturbances:

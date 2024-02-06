@@ -3,7 +3,7 @@ name: USVSystemID
 
 physics_engine: ${..physics_engine}
 experiment: USV_System_ID
-task_name: ZigZag # Acceleration, Circle, Round, ZigZag
+task_name: Stop # Acceleration, Circle, Round, ZigZag
 
 # if given, will override the device setting in gym. 
 env:
@@ -28,7 +28,7 @@ env:
   wind:
 
   water_current:
-    use_water_current: True
+    use_water_current: False
     flow_velocity: [0.0, 0.0, 0.0] # x, y, z
 
   disturbances:
@@ -226,14 +226,15 @@ dynamics:
     scaling_added_mass: 1.0
 
   hydrostatics:
-    average_hydrostatics_force_value: 10
-    amplify_torque: 20
+    average_hydrostatics_force_value: 275
+    amplify_torque: 1.0
     material_density: 133
     water_density: 1000
     mass: 28.0 
     box_width: 1.0
-    box_length: 1.40
-    box_height: 0.20
+    box_length: 1.3
+    waterplane_area: 0.233333 # Default: 0.233333, to satisfy Kingfisher/Heron draught 120mm
+    heron_zero_height: 0.24
 
   acceleration:
     alpha: 0.3

@@ -142,8 +142,15 @@ class USVSystemID(RLTask):
         ]
         self.box_width = self._task_cfg["dynamics"]["hydrostatics"]["box_width"]
         self.box_length = self._task_cfg["dynamics"]["hydrostatics"]["box_length"]
-        self.box_height = self._task_cfg["dynamics"]["hydrostatics"]["box_height"]
-        self.box_volume = self.box_width * self.box_length * self.box_height
+        self.waterplane_area = self._task_cfg["dynamics"]["hydrostatics"][
+            "waterplane_area"
+        ]
+        self.heron_zero_height = self._task_cfg["dynamics"]["hydrostatics"][
+            "heron_zero_height"
+        ]
+        self.max_volume = (
+            self.box_width * self.box_length * (self.heron_zero_height + 20)
+        )  # TODO: Hardcoded value
         self.box_mass = self._task_cfg["dynamics"]["hydrostatics"]["mass"]
 
         # thrusters dynamics
@@ -250,6 +257,12 @@ class USVSystemID(RLTask):
             (self._num_envs, 3), device=self._device, dtype=torch.float32
         )
 
+        # Debug : add thruster position
+        """
+        self.thruster_left_pos = torch.zeros(
+            (self._num_envs, 3), device=self._device, dtype=torch.float32
+        )
+        """
         # volume submerged
         self.high_submerged = torch.zeros(
             (self._num_envs), device=self._device, dtype=torch.float32
@@ -471,6 +484,9 @@ class USVSystemID(RLTask):
 
         # Collects the position and orientation of the platform
         self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
+        # Debug: check world pose of heron
+        # print(f"self.root_pos: {self.root_pos}")
+
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
         # Collects the velocity of the platform
@@ -499,10 +515,12 @@ class USVSystemID(RLTask):
 
         # body underwater
         self.high_submerged[:] = torch.clamp(
-            (self.box_height / 2) - self.root_pos[:, 2], 0, self.box_height
+            (self.heron_zero_height) - self.root_pos[:, 2],
+            0,
+            self.heron_zero_height + 20,  # TODO: Hardcoded value
         )
         self.submerged_volume[:] = torch.clamp(
-            self.high_submerged * self.box_width * self.box_length, 0, self.box_volume
+            self.high_submerged * self.waterplane_area, 0, self.max_volume
         )
         self.box_is_under_water = torch.where(
             self.high_submerged[:] > 0, 1.0, 0.0
@@ -673,6 +691,8 @@ class USVSystemID(RLTask):
                 )
             else:
                 self.actions = torch.ones_like(self.actions) * 0
+        elif self._task_name == "Stop":
+            self.actions = torch.ones_like(self.actions) * 0
         else:
             raise NotImplementedError("The requested task is not supported.")
 
@@ -740,6 +760,8 @@ class USVSystemID(RLTask):
                 self.submerged_volume, self.euler_angles, self.root_quats
             )
         )
+        # Debug : hydrostatic force
+        print(f"hydrostatic_force: {self.hydrostatic_force}")
         # Hydrodynamic forces
         self.drag[:, :] = self.hydrodynamics.ComputeHydrodynamicsEffects(
             0.01,
@@ -748,6 +770,9 @@ class USVSystemID(RLTask):
             self.use_water_current,
             self.flow_vel,
         )  # * self.box_is_under_water[:,:].mT
+
+        # Debug : drag
+        # print(f"drag: {self.drag}")
 
         self.thrusters[:, :] = self.thrusters_dynamics.update_forces()
         # (self.thrusters)
@@ -758,6 +783,9 @@ class USVSystemID(RLTask):
             torques=self.hydrostatic_force[:, 3:] + self.drag[:, 3:],
             is_global=False,
         )
+        # Debug : apply forces
+        print(f"hydrostatic forces: {self.hydrostatic_force[:, :3]}")
+        print(f"drag forces: {self.drag[:, :3]}")
         # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)
         # print drag = self.drag
         # print ("drag: ", self.drag)
