@@ -485,7 +485,7 @@ class USVSystemID(RLTask):
         # Collects the position and orientation of the platform
         self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
         # Debug: check world pose of heron
-        # print(f"self.root_pos: {self.root_pos}")
+        #print(f"self.root_pos: {self.root_pos}")
 
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
@@ -761,7 +761,7 @@ class USVSystemID(RLTask):
             )
         )
         # Debug : hydrostatic force
-        print(f"hydrostatic_force: {self.hydrostatic_force}")
+        #print(f"hydrostatic_force: {self.hydrostatic_force}")
         # Hydrodynamic forces
         self.drag[:, :] = self.hydrodynamics.ComputeHydrodynamicsEffects(
             0.01,
@@ -784,8 +784,8 @@ class USVSystemID(RLTask):
             is_global=False,
         )
         # Debug : apply forces
-        print(f"hydrostatic forces: {self.hydrostatic_force[:, :3]}")
-        print(f"drag forces: {self.drag[:, :3]}")
+        #print(f"hydrostatic forces: {self.hydrostatic_force[:, :3]}")
+        #print(f"drag forces: {self.drag[:, :3]}")
         # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)
         # print drag = self.drag
         # print ("drag: ", self.drag)

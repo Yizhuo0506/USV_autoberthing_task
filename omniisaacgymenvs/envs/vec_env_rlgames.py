@@ -94,6 +94,7 @@ class VecEnvRLGames(VecEnvBase):
             self._task.update_state()
             self.sim_frame_count += 1
 
+        self._task.apply_forces()
         self._world.step(render=self._render)
         self.sim_frame_count += 1
 
