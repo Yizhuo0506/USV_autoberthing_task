@@ -122,6 +122,9 @@ class HydrostaticsObject:
         # not sure if torque have to be multiply by the rotation matrix also.
         self.archimedes_torque_local = self.archimedes_torque_global
 
+        # print(f"archimedes_force_global: {self.archimedes_force_global[0,:]}")
+        # print(f"archimedes_force_local: {self.archimedes_force_local[0,:]}")
+
         return torch.hstack(
             [
                 self.archimedes_force_local,

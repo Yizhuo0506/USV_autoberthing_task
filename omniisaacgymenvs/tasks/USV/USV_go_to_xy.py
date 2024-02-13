@@ -78,7 +78,21 @@ class GoToXYTask(Core):
         Computes the observation tensor from the current state of the robot."""
 
         self._position_error = self._target_positions - current_state["position"]
-        self._task_data[:, :2] = self._position_error
+        # Convert the orientation to radian
+        theta = torch.atan2(
+            current_state["orientation"][:, 1], current_state["orientation"][:, 0]
+        )
+        # Compute the angle  of goal in global frame
+        beta = torch.atan2(self._position_error[:, 1], self._position_error[:, 0])
+        # Compute the angle error
+        alpha = torch.fmod(beta - theta + math.pi, 2 * math.pi) - math.pi
+        # Convert alpha to cos and sin
+        self._task_data[:, 0] = torch.cos(alpha)
+        self._task_data[:, 1] = torch.sin(alpha)
+        # Compute the Distance to the goal
+        self._task_data[:, 2] = torch.norm(self._position_error, dim=1)
+        # Debug : print the task data
+        # print(f"self._task_data: {self._task_data}")
         return self.update_observation_tensor(current_state, observation_frame)
 
     def compute_reward(

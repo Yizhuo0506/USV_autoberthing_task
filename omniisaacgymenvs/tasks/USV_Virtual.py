@@ -136,8 +136,15 @@ class USVVirtual(RLTask):
         ]
         self.box_width = self._task_cfg["dynamics"]["hydrostatics"]["box_width"]
         self.box_length = self._task_cfg["dynamics"]["hydrostatics"]["box_length"]
-        self.box_height = self._task_cfg["dynamics"]["hydrostatics"]["box_height"]
-        self.box_volume = self.box_width * self.box_length * self.box_height
+        self.waterplane_area = self._task_cfg["dynamics"]["hydrostatics"][
+            "waterplane_area"
+        ]
+        self.heron_zero_height = self._task_cfg["dynamics"]["hydrostatics"][
+            "heron_zero_height"
+        ]
+        self.max_volume = (
+            self.box_width * self.box_length * (self.heron_zero_height + 20)
+        )  # TODO: Hardcoded value
         self.box_mass = self._task_cfg["dynamics"]["hydrostatics"]["mass"]
 
         # thrusters dynamics
@@ -493,10 +500,12 @@ class USVVirtual(RLTask):
 
         # body underwater
         self.high_submerged[:] = torch.clamp(
-            (self.box_height / 2) - self.root_pos[:, 2], 0, self.box_height
+            (self.heron_zero_height) - self.root_pos[:, 2],
+            0,
+            self.heron_zero_height + 20,  # TODO: Hardcoded value
         )
         self.submerged_volume[:] = torch.clamp(
-            self.high_submerged * self.box_width * self.box_length, 0, self.box_volume
+            self.high_submerged * self.waterplane_area, 0, self.max_volume
         )
         self.box_is_under_water = torch.where(
             self.high_submerged[:] > 0, 1.0, 0.0
@@ -582,7 +591,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        self.actions = torch.ones_like(self.actions) * 0
+        # self.actions = torch.ones_like(self.actions) * 0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -637,10 +646,10 @@ class USVVirtual(RLTask):
         )
         """
         # Hydrostatic force
-        self.hydrostatic_force[
-            :, :
-        ] = self.hydrostatics.compute_archimedes_metacentric_local(
-            self.submerged_volume, self.euler_angles, self.root_quats
+        self.hydrostatic_force[:, :] = (
+            self.hydrostatics.compute_archimedes_metacentric_local(
+                self.submerged_volume, self.euler_angles, self.root_quats
+            )
         )
         # Hydrodynamic forces
         self.drag[:, :] = self.hydrodynamics.ComputeHydrodynamicsEffects(

@@ -6,7 +6,7 @@ experiment: USV_System_ID
 task:
   task_name: Acceleration # Acceleration, Circle, Round, ZigZag
   acceleration:
-    thrust: 1.0 # 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0
+    thrust: 0.8 # 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0
     accel_time: 60
   circle:
     # -1.0 | 0.4964
@@ -254,7 +254,7 @@ dynamics:
     amplify_torque: 1.0
     material_density: 133
     water_density: 1000
-    mass: 28.0 
+    mass: 34.0 
     box_width: 1.0
     box_length: 1.3
     waterplane_area: 0.233333 # Default: 0.233333, to satisfy Kingfisher/Heron draught 120mm

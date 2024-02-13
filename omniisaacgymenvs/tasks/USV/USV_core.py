@@ -23,14 +23,16 @@ class Core:
         self._device = device
 
         # Dimensions of the observation tensors (default: world frame)
-        self._dim_orientation: 2  # theta heading in the world frame (cos(theta), sin(theta)) [0:2]
+        self._dim_orientation: (
+            2  # theta heading in the world frame (cos(theta), sin(theta)) [0:2]
+        )
         self._dim_velocity: 2  # velocity in the world (x_dot, y_dot) [2:4]
         self._dim_omega: 1  # rotation velocity (theta_dot) [4]
         self._dim_task_label: 1  # label of the task to be executed (int) [5]
         self._dim_task_data: 4  # data to be used to fullfil the task (floats) [6:10]
 
         # Observation buffers
-        self._num_observations = 10
+        self._num_observations = 11
         self._obs_buffer = torch.zeros(
             (self._num_envs, self._num_observations),
             device=self._device,
@@ -40,7 +42,7 @@ class Core:
             (self._num_envs), device=self._device, dtype=torch.float32
         )
         self._task_data = torch.zeros(
-            (self._num_envs, 4), device=self._device, dtype=torch.float32
+            (self._num_envs, 5), device=self._device, dtype=torch.float32
         )
 
     def update_observation_tensor(
@@ -54,36 +56,34 @@ class Core:
             self._obs_buffer[:, 2:4] = current_state["linear_velocity"]
             self._obs_buffer[:, 4] = current_state["angular_velocity"]
             self._obs_buffer[:, 5] = self._task_label
-            self._obs_buffer[:, 6:10] = self._task_data
+            self._obs_buffer[:, 6:11] = self._task_data
         elif observation_frame == "local":
-            # TODO: implement local frame
-            # Default: we do not want global frame orientation            
-            #self._obs_buffer[:, 0:2] = current_state["orientation"]
-
+            # Orientation cos, sin of USV in the global frame
             cos_theta = current_state["orientation"][:, 0]
             sin_theta = current_state["orientation"][:, 1]
-            # Linear velocity in the local frame
-            self._obs_buffer[:, 2] = (
+            # Convert the linear velocity to the local frame
+            self._obs_buffer[:, 0] = (
                 cos_theta * current_state["linear_velocity"][:, 0]
                 + sin_theta * current_state["linear_velocity"][:, 1]
             )
-            self._obs_buffer[:, 3] = (
+            self._obs_buffer[:, 1] = (
                 -sin_theta * current_state["linear_velocity"][:, 0]
                 + cos_theta * current_state["linear_velocity"][:, 1]
             )
+            self._obs_buffer[:, 2] = current_state["angular_velocity"]
+            self._obs_buffer[:, 3:8] = self._task_data
 
-            self._obs_buffer[:, 4] = current_state["angular_velocity"]
-            self._obs_buffer[:, 5] = self._task_label
-
+            """
             # Position error in local frame
-            self._obs_buffer[:, 6] = (
+            self._obs_buffer[:, 3] = (
                 cos_theta * self._task_data[:, 0] + sin_theta * self._task_data[:, 1]
             )
-            self._obs_buffer[:, 7] = (
+            self._obs_buffer[:, 4] = (
                 -sin_theta * self._task_data[:, 0] + cos_theta * self._task_data[:, 1]
             )
-            self._obs_buffer[:, 8] = self._task_data[:, 2]
-            self._obs_buffer[:, 9] = self._task_data[:, 3]
+            self._obs_buffer[:, 5] = self._task_data[:, 2]
+            self._obs_buffer[:, 6] = self._task_data[:, 3]
+            """
 
         return self._obs_buffer
 

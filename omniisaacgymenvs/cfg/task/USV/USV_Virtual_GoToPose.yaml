@@ -6,7 +6,7 @@ experiment: USV_Virtual_GoToPose
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:16,${...num_envs}}
+  numEnvs: ${resolve_default:64,${...num_envs}}
   envSpacing: 12
   maxEpisodeLength: 700
   enableDebugVis: False
@@ -28,7 +28,7 @@ env:
 
   water_current:
     use_water_current: False
-    flow_velocity: [2.0, 0.0, 0.0] # x, y, z
+    flow_velocity: [0.0, 0.0, 0.0] # x, y, z
 
   disturbances:
     # Uneven floor generation
@@ -212,8 +212,8 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1.0]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 1.0]
+    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 6]
+    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 5]
     # Below is original damping parameters from axel's code
     #squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
     #linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 0.001]
@@ -227,14 +227,15 @@ dynamics:
     scaling_added_mass: 1.0
 
   hydrostatics:
-    average_hydrostatics_force_value: 10
-    amplify_torque: 20
+    average_hydrostatics_force_value: 275
+    amplify_torque: 1.0
     material_density: 133
     water_density: 1000
-    mass: 28.0 
+    mass: 34.0 
     box_width: 1.0
-    box_length: 1.40
-    box_height: 0.20
+    box_length: 1.3
+    waterplane_area: 0.233333 # Default: 0.233333, to satisfy Kingfisher/Heron draught 120mm
+    heron_zero_height: 0.24
 
   acceleration:
     alpha: 0.3
