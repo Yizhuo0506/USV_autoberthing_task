@@ -2,7 +2,6 @@ import torch
 import pytorch3d.transforms
 from omniisaacgymenvs.envs.USV.Utils import *
 
-
 class HydrodynamicsObject:
     def __init__(
         self,
@@ -60,7 +59,7 @@ class HydrodynamicsObject:
         return
 
     def compute_squared_drag(self, boat_velocities, quaternions):
-        """this function implements the drag, rotation drag is needed becaurle of where archimedes is applied. if the boat start to rate around x for
+        """this function implements the drag, rotation drag is needed because of where archimedes is applied. if the boat start to rate around x for
         example, since archimedes is applied onto the center, isaac sim will believe that the boat is still under water and so the boat is free to rotate around and
         y. So to prevent this behaviour, if we don't want to create 4 rigid bodies as talked above, we are forced to add a drag + stabilizer to the simulation.
 

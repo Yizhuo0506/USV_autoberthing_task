@@ -52,6 +52,8 @@ import time
 import math
 import torch
 from gym import spaces
+
+# from datetime import datetime
 from dataclasses import dataclass
 
 EPS = 1e-6  # small constant to avoid divisions by 0 and log(0)
@@ -81,9 +83,27 @@ class USVSystemID(RLTask):
         self._discrete_actions = self._task_cfg["env"]["action_mode"]
         self._observation_frame = self._task_cfg["env"]["observation_frame"]
         self._device = self._cfg["sim_device"]
-        self._task_name = self._task_cfg[
+        self._task_name = self._task_cfg["task"][
             "task_name"
         ]  # Acceleration, Circle, Round, ZigZag
+        self._task_param = " "
+        self.acceleration_thrust = self._task_cfg["task"]["acceleration"]["thrust"]
+        self.acceleration_accel_time = self._task_cfg["task"]["acceleration"][
+            "accel_time"
+        ]
+        self.circle_thrust_low = self._task_cfg["task"]["circle"]["thrust_low"]
+        self.circle_thrust_high = self._task_cfg["task"]["circle"]["thrust_high"]
+        self.circle_prep_time = self._task_cfg["task"]["circle"]["prep_time"]
+        self.circle_rotate_time = self._task_cfg["task"]["circle"]["rotate_time"]
+        self.round_thrust_low = self._task_cfg["task"]["round"]["thrust_low"]
+        self.round_thrust_high = self._task_cfg["task"]["round"]["thrust_high"]
+        self.round_prep_time = self._task_cfg["task"]["round"]["prep_time"]
+        self.round_rotate_time = self._task_cfg["task"]["round"]["rotate_time"]
+        self.zigzag_thrust_low = self._task_cfg["task"]["zigzag"]["thrust_low"]
+        self.zigzag_thrust_high = self._task_cfg["task"]["zigzag"]["thrust_high"]
+        self.zigzag_prep_time = self._task_cfg["task"]["zigzag"]["prep_time"]
+        self.zigzag_zigzag_time = self._task_cfg["task"]["zigzag"]["zigzag_time"]
+
         self.step = 0
         # Initialize a list to store observations and progress times
         self.observation_data = []
@@ -485,7 +505,7 @@ class USVSystemID(RLTask):
         # Collects the position and orientation of the platform
         self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
         # Debug: check world pose of heron
-        #print(f"self.root_pos: {self.root_pos}")
+        # print(f"self.root_pos: {self.root_pos}")
 
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
@@ -582,13 +602,19 @@ class USVSystemID(RLTask):
 
         observations = {self._heron.name: {"obs_buf": self.obs_buf}}
 
-        # Structure to capture current observation and progress time
-        current_data = {
-            "progress_time": self.progress_buf.cpu().numpy().tolist(),
-            "observations": {
-                key: value.cpu().numpy().tolist() for key, value in self.obs_buf.items()
-            },
+        state_components = {
+            key: value.cpu().numpy().tolist()
+            for key, value in self.current_state.items()
         }
+
+        # Structure to capture current observation and progress time and thrust
+        current_data = {
+            "progress_step": self.progress_buf.cpu().numpy().tolist(),
+            "thrust_cmds": self.actions.cpu().numpy().tolist(),
+            "euler_angles": self.euler_angles.cpu().numpy().tolist(),
+        }
+        current_data.update(state_components)
+
         self.observation_data.append(current_data)
 
         # Debug : observations
@@ -619,75 +645,123 @@ class USVSystemID(RLTask):
         sim_freq = 10  # Hz
 
         if self._task_name == "Acceleration":
-            if self.progress_buf[0] < sim_freq * 60:
-                self.actions = torch.ones_like(self.actions) * 1
+            if self.progress_buf[0] < sim_freq * self.acceleration_accel_time:
+                self.actions = torch.ones_like(self.actions) * self.acceleration_thrust
             else:
                 self.actions = torch.ones_like(self.actions) * 0
         elif self._task_name == "Circle":
-            if self.progress_buf[0] < sim_freq * 20:
+            if self.progress_buf[0] < sim_freq * self.circle_prep_time:
                 # Full throttle to initiate the circle
                 self.actions = torch.ones_like(self.actions) * 1
-            elif self.progress_buf[0] < sim_freq * 50:
+            elif self.progress_buf[0] < sim_freq * (
+                self.circle_prep_time + self.circle_rotate_time
+            ):
                 # Adjust to maintain the circle, possibly by modulating thrust
                 # This could be a static value or dynamically adjusted based on feedback
                 self.actions = torch.torch.tensor(
-                    [[-1, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.circle_thrust_low, self.circle_thrust_high]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
             else:
                 self.actions = torch.ones_like(self.actions) * 0
         elif self._task_name == "Round":
-            if self.progress_buf[0] < sim_freq * 20:
+            if self.progress_buf[0] < sim_freq * self.round_prep_time:
                 self.actions = torch.ones_like(self.actions) * 1
-            elif self.progress_buf[0] < sim_freq * 50:
+            elif self.progress_buf[0] < sim_freq * (
+                self.round_prep_time + self.round_rotate_time
+            ):
                 self.actions = torch.torch.tensor(
-                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.round_thrust_low, self.round_thrust_high]] * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
             else:
                 self.actions = torch.ones_like(self.actions) * 0
         elif self._task_name == "ZigZag":
-            zigzag_time = 3.0  # sec
-            if self.progress_buf[0] < sim_freq * 20:
+            if self.progress_buf[0] < sim_freq * self.zigzag_prep_time:
                 # print("Preparing ZigZag, 20 sec of full throttle.")
                 self.actions = torch.ones_like(self.actions) * 1
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 1 * self.zigzag_zigzag_time
+            ):
                 # print("1st left turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_low, self.zigzag_thrust_high]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 2:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 2 * self.zigzag_zigzag_time
+            ):
                 # print("1st right turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_high, self.zigzag_thrust_low]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 3:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 3 * self.zigzag_zigzag_time
+            ):
                 # print("2nd left turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_low, self.zigzag_thrust_high]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 4:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 4 * self.zigzag_zigzag_time
+            ):
                 # print("2nd right turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_high, self.zigzag_thrust_low]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 5:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 5 * self.zigzag_zigzag_time
+            ):
                 # print("3rd left turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_low, self.zigzag_thrust_high]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 6:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 6 * self.zigzag_zigzag_time
+            ):
                 # print("3rd right turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_high, self.zigzag_thrust_low]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 7:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 7 * self.zigzag_zigzag_time
+            ):
                 # print("4th left turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[0, 1]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_low, self.zigzag_thrust_high]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
-            elif self.progress_buf[0] < sim_freq * 20 + sim_freq * zigzag_time * 8:
+            elif self.progress_buf[0] < sim_freq * (
+                self.zigzag_prep_time + 8 * self.zigzag_zigzag_time
+            ):
                 # print("4th right turn, 3 sec")
                 self.actions = torch.torch.tensor(
-                    [[1, 0]] * self._num_envs, device=self._device, dtype=torch.float32
+                    [[self.zigzag_thrust_high, self.zigzag_thrust_low]]
+                    * self._num_envs,
+                    device=self._device,
+                    dtype=torch.float32,
                 )
             else:
                 self.actions = torch.ones_like(self.actions) * 0
@@ -695,10 +769,6 @@ class USVSystemID(RLTask):
             self.actions = torch.ones_like(self.actions) * 0
         else:
             raise NotImplementedError("The requested task is not supported.")
-
-        if self.progress_buf[0] == sim_freq * 70:
-            self.save_observation_data("results.csv")
-            print("Observation data saved to results.csv")
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -723,7 +793,30 @@ class USVSystemID(RLTask):
 
         self.thrusters_dynamics.set_target_force(thrusts)
 
-        # print(f"thrusts: {thrusts}")
+        # Format the current time as specified (year-month-day-hour-minute)
+        # current_time_str = datetime.now().strftime("%Y-%m-%d-%H-%M")
+        if self._task_name == "Acceleration":
+            self._task_param = (
+                f"{self.acceleration_thrust:.4f}_{self.acceleration_thrust:.4f}"
+            )
+        elif self._task_name == "Circle":
+            self._task_param = (
+                f"{self.circle_thrust_low:.4f}_{self.circle_thrust_high:.4f}"
+            )
+        elif self._task_name == "Round":
+            self._task_param = (
+                f"{self.round_thrust_low:.4f}_{self.round_thrust_high:.4f}"
+            )
+        elif self._task_name == "ZigZag":
+            self._task_param = (
+                f"{self.zigzag_thrust_low:.4f}_{self.zigzag_thrust_high:.4f}"
+            )
+
+        if self.progress_buf[0] == sim_freq * 80:
+            file_path = f"testdata/{self._task_name}_{self._task_param}.csv"
+            self.process_and_save_observation_data(
+                self.observation_data, thrusts, file_path
+            )
         return
 
     def apply_forces(self) -> None:
@@ -761,7 +854,7 @@ class USVSystemID(RLTask):
             )
         )
         # Debug : hydrostatic force
-        #print(f"hydrostatic_force: {self.hydrostatic_force}")
+        # print(f"hydrostatic_force: {self.hydrostatic_force}")
         # Hydrodynamic forces
         self.drag[:, :] = self.hydrodynamics.ComputeHydrodynamicsEffects(
             0.01,
@@ -784,8 +877,8 @@ class USVSystemID(RLTask):
             is_global=False,
         )
         # Debug : apply forces
-        #print(f"hydrostatic forces: {self.hydrostatic_force[:, :3]}")
-        #print(f"drag forces: {self.drag[:, :3]}")
+        # print(f"hydrostatic forces: {self.hydrostatic_force[:, :3]}")
+        # print(f"drag forces: {self.drag[:, :3]}")
         # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)
         # print drag = self.drag
         # print ("drag: ", self.drag)
@@ -982,11 +1075,40 @@ class USVSystemID(RLTask):
             self.progress_buf >= self._max_episode_length - 1, ones, die
         )
 
-    def save_observation_data(self, file_path):
+    def process_and_save_observation_data(self, observation_data, thrusts, file_path):
+        processed_data = []
 
-        # Convert the list of dictionaries to a pandas DataFrame
-        # Note: This step may need customization based on the structure of your observations
-        df = pd.DataFrame(self.observation_data)
+        for entry in observation_data:
+            # Process each observation entry to split lists into individual components
+            processed_entry = {
+                "time": entry["progress_step"][0]
+                / 10,  # Assuming it's always a single value list
+                "thr_l": entry["thrust_cmds"][0][0],
+                "thr_r": entry["thrust_cmds"][0][1],
+                "pos_x": float(entry["position"][0][0]),
+                "pos_y": float(entry["position"][0][1]),
+                "heading_cos": float(entry["orientation"][0][0]),
+                "heading_sin": float(entry["orientation"][0][1]),
+                "pitch": float(entry["euler_angles"][0][1]),
+                "lin_x": float(entry["linear_velocity"][0][0]),
+                "lin_y": float(entry["linear_velocity"][0][1]),
+                "ang_z": float(entry["angular_velocity"][0]),
+            }
+
+            # Format float values to limit precision
+            for key, value in processed_entry.items():
+                if isinstance(value, float):
+                    processed_entry[key] = (
+                        f"{value:.6e}"  # Format as scientific notation with precision limit
+                    )
+
+            processed_data.append(processed_entry)
+
+        # Convert the processed data into a DataFrame
+        df = pd.DataFrame(processed_data)
 
         # Save the DataFrame as a CSV file
         df.to_csv(file_path, index=False)
+
+        # Notice the save is done
+        print(f"file saved to {file_path}")

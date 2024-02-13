@@ -3,7 +3,31 @@ name: USVSystemID
 
 physics_engine: ${..physics_engine}
 experiment: USV_System_ID
-task_name: Stop # Acceleration, Circle, Round, ZigZag
+task:
+  task_name: Acceleration # Acceleration, Circle, Round, ZigZag
+  acceleration:
+    thrust: 1.0 # 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0
+    accel_time: 60
+  circle:
+    # -1.0 | 0.4964
+    # -0.8 | 0.4774
+    # -0.6 | 0.4143
+    # -0.4 | 0.3250
+    # -0.2 | 0.1667
+    thrust_low: -1.0
+    thrust_high: 0.4964
+    prep_time: 20
+    rotate_time: 30
+  round:
+    thrust_low: 0.0
+    thrust_high: 1.0
+    prep_time: 20
+    rotate_time: 30
+  zigzag:
+    thrust_low: 0.0
+    thrust_high: 1.0
+    prep_time: 20
+    zigzag_time: 3.0
 
 # if given, will override the device setting in gym. 
 env:
@@ -211,8 +235,8 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 3.0]
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 10.0]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 10.0]
+    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 3.98987496]
+    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 7.73248908]
     # Below is original damping parameters from axel's code
     #squared_drag_coefficients: [4.0, 4.0, 100, 4.0, 4.0 , 0.003]
     #linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 0.001]

@@ -57,8 +57,8 @@ class Core:
             self._obs_buffer[:, 6:10] = self._task_data
         elif observation_frame == "local":
             # TODO: implement local frame
-            self._obs_buffer[:, 0:2] = torch.tensor([0, 0], device=self._device)
-            # self._obs_buffer[:, 0:2] = current_state["orientation"]
+            # Default: we do not want global frame orientation            
+            #self._obs_buffer[:, 0:2] = current_state["orientation"]
 
             cos_theta = current_state["orientation"][:, 0]
             sin_theta = current_state["orientation"][:, 1]
