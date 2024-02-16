@@ -4,7 +4,7 @@ name: USVSystemID
 physics_engine: ${..physics_engine}
 experiment: USV_System_ID
 task:
-  task_name: Acceleration # Acceleration, Circle, Round, ZigZag
+  task_name: Round # Acceleration, Circle, Round, ZigZag
   acceleration:
     thrust: 0.8 # 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 1.0
     accel_time: 60
@@ -20,7 +20,7 @@ task:
     rotate_time: 30
   round:
     thrust_low: 0.0
-    thrust_high: 1.0
+    thrust_high: 0.4
     prep_time: 20
     rotate_time: 30
   zigzag:
