@@ -18,14 +18,14 @@ class GoToXYParameters:
     """
     Parameters for the GoToXY task."""
 
-    position_tolerance: float = 0.01
-    kill_after_n_steps_in_tolerance: int = 50
+    position_tolerance: float = 0.2
+    kill_after_n_steps_in_tolerance: int = 1
     goal_random_position: float = 0.0
-    max_spawn_dist: float = 6.0
+    max_spawn_dist: float = 10.0
     min_spawn_dist: float = 3.0
-    kill_dist: float = 8.0
+    kill_dist: float = 20.0
     boundary_cost: float = 25
-    goal_reward: float = 100.0
+    goal_reward: float = 1000.0
 
     spawn_curriculum: bool = False
     spawn_curriculum_min_dist: float = 0.5
