@@ -158,9 +158,12 @@ class USVVirtual(RLTask):
         self.numberOfPointsForInterpolation = self._task_cfg["dynamics"]["thrusters"][
             "interpolation"
         ]["numberOfPointsForInterpolation"]
-        self.interpolationPointsFromRealData = self._task_cfg["dynamics"]["thrusters"][
-            "interpolation"
-        ]["interpolationPointsFromRealData"]
+        self.interpolationPointsFromRealDataLeft = self._task_cfg["dynamics"][
+            "thrusters"
+        ]["interpolation"]["interpolationPointsFromRealDataLeft"]
+        self.interpolationPointsFromRealDataRight = self._task_cfg["dynamics"][
+            "thrusters"
+        ]["interpolation"]["interpolationPointsFromRealDataRight"]
         # least square methode
         self.neg_cmd_coeff = self._task_cfg["dynamics"]["thrusters"][
             "leastSquareMethod"
@@ -459,7 +462,8 @@ class USVVirtual(RLTask):
             timeConstant=self.timeConstant,
             dt=self.dt,
             numberOfPointsForInterpolation=self.numberOfPointsForInterpolation,
-            interpolationPointsFromRealData=self.interpolationPointsFromRealData,
+            interpolationPointsFromRealDataLeft=self.interpolationPointsFromRealDataLeft,
+            interpolationPointsFromRealDataRight=self.interpolationPointsFromRealDataRight,
             coeff_neg_commands=self.neg_cmd_coeff,
             coeff_pos_commands=self.pos_cmd_coeff,
             cmd_lower_range=self.cmd_lower_range,
@@ -591,7 +595,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        # self.actions = torch.ones_like(self.actions) * 0
+        # self.actions = torch.ones_like(self.actions) * 1.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":

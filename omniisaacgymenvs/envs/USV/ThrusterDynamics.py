@@ -37,7 +37,8 @@ class DynamicsFirstOrder(Dynamics):
         timeConstant,
         dt,
         numberOfPointsForInterpolation,
-        interpolationPointsFromRealData,
+        interpolationPointsFromRealDataLeft,
+        interpolationPointsFromRealDataRight,
         coeff_neg_commands,
         coeff_pos_commands,
         cmd_lower_range,
@@ -54,12 +55,15 @@ class DynamicsFirstOrder(Dynamics):
         self.commands = torch.linspace(
             cmd_lower_range,
             cmd_upper_range,
-            steps=len(interpolationPointsFromRealData),
+            steps=len(interpolationPointsFromRealDataLeft),
             device=self.device,
         )
         self.numberOfPointsForInterpolation = numberOfPointsForInterpolation
-        self.interpolationPointsFromRealData = torch.tensor(
-            interpolationPointsFromRealData, device=self.device
+        self.interpolationPointsFromRealDataLeft = torch.tensor(
+            interpolationPointsFromRealDataLeft, device=self.device
+        )
+        self.interpolationPointsFromRealDataRight = torch.tensor(
+            interpolationPointsFromRealDataRight, device=self.device
         )
 
         # forces
@@ -102,26 +106,44 @@ class DynamicsFirstOrder(Dynamics):
         self.x_linear_interp = torch.linspace(
             min(self.commands), max(self.commands), self.numberOfPointsForInterpolation
         )
-        self.y_linear_interp = torch.nn.functional.interpolate(
-            self.interpolationPointsFromRealData.unsqueeze(0).unsqueeze(0),
+        self.y_linear_interp_left = torch.nn.functional.interpolate(
+            self.interpolationPointsFromRealDataLeft.unsqueeze(0).unsqueeze(0),
             size=self.numberOfPointsForInterpolation,
             mode="linear",
-            align_corners=False,
+            align_corners=True,
         )
-
-        self.y_linear_interp = self.y_linear_interp.squeeze(0).squeeze(
+        self.y_linear_interp_right = torch.nn.functional.interpolate(
+            self.interpolationPointsFromRealDataRight.unsqueeze(0).unsqueeze(0),
+            size=self.numberOfPointsForInterpolation,
+            mode="linear",
+            align_corners=True,
+        )
+        self.y_linear_interp_left = self.y_linear_interp_left.squeeze(0).squeeze(
             0
         )  # back to dim 1
-
-        self.n = len(self.y_linear_interp) - 1
+        self.y_linear_interp_right = self.y_linear_interp_right.squeeze(0).squeeze(
+            0
+        )  # back to dim 1
+        self.n_left = self.numberOfPointsForInterpolation
+        self.n_right = self.numberOfPointsForInterpolation
 
     def get_cmd_interpolated(self, cmd_value):
         """get the corresponding force value in the lookup table of interpolated forces"""
-
+        # Debug: print(cmd_value)
+        # print(f"cmd_value: {cmd_value}")
         # cmd_value is size (num_envs,2)
-        self.idx_matrix = torch.round(((cmd_value + 1) * self.n / 2)).to(torch.long)
-
-        self.thruster_forces_before_dynamics = self.y_linear_interp[self.idx_matrix]
+        idx_left = torch.round(((cmd_value[:, 0] + 1) / 2 * self.n_left) - 1).to(
+            torch.long
+        )
+        idx_right = torch.round(((cmd_value[:, 1] + 1) / 2 * self.n_right) - 1).to(
+            torch.long
+        )
+        # print(f"idx_left: {idx_left}")
+        # Using indices to gather interpolated forces for each thruster
+        self.thruster_forces_before_dynamics[:, 0] = self.y_linear_interp_left[idx_left]
+        self.thruster_forces_before_dynamics[:, 1] = self.y_linear_interp_right[
+            idx_right
+        ]
 
     def set_target_force(self, commands):
         """this function get commands as entry and provide resulting forces"""
@@ -135,6 +157,8 @@ class DynamicsFirstOrder(Dynamics):
             self.thruster_forces_before_dynamics, self.dt
         )  # every simulation step that tracks the target  update_thrusters_forces
 
+        # Debug: print(self.thrusters[:,[0,3]])
+        # print(f"thrusters: {self.thrusters[:,[0,3]]}")
         return self.thrusters
 
     """function below has to be change to fit multi robots training"""
