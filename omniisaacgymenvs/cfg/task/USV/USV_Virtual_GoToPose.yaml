@@ -16,7 +16,7 @@ env:
 
   observation_frame: "local"
 
-  controlFrequencyInv: 10
+  controlFrequencyInv: 5
 
   clipObservations: {state: 8.0}
   clipActions: 1.0
@@ -141,7 +141,7 @@ env:
     penalize_angular_velocities_c2: 0.00
 
 sim:
-  dt: 0.01
+  dt: 0.02
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
   add_ground_plane: True

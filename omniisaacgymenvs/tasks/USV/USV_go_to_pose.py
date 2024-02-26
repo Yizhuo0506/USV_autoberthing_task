@@ -144,11 +144,33 @@ class GoToPoseTask(Core):
 
         die = torch.zeros_like(self._goal_reached, dtype=torch.long)
         ones = torch.ones_like(self._goal_reached, dtype=torch.long)
+
+        # Run curriculum if selected
+        if self._task_parameters.spawn_curriculum:
+            if step < self._task_parameters.spawn_curriculum_warmup:
+                kill_dist = self._task_parameters.spawn_curriculum_kill_dist
+            elif step > self._task_parameters.spawn_curriculum_end:
+                kill_dist = self._task_parameters.kill_dist
+            else:
+                r = (step - self._task_parameters.spawn_curriculum_warmup) / (
+                    self._task_parameters.spawn_curriculum_end
+                    - self._task_parameters.spawn_curriculum_warmup
+                )
+                kill_dist = (
+                    r
+                    * (
+                        self._task_parameters.kill_dist
+                        - self._task_parameters.spawn_curriculum_kill_dist
+                    )
+                    + self._task_parameters.spawn_curriculum_kill_dist
+                )
+        else:
+            kill_dist = self._task_parameters.kill_dist
+
+        die = torch.where(self.position_dist > kill_dist, ones, die)
         die = torch.where(
-            self.position_dist > self._task_parameters.kill_dist, ones, die
-        )
-        die = torch.where(
-            self._goal_reached > self._task_parameters.kill_after_n_steps_in_tolerance,
+            self._goal_reached
+            >= self._task_parameters.kill_after_n_steps_in_tolerance,  # self._goal_reached > self._task_parameters.kill_after_n_steps_in_tolerance,
             ones,
             die,
         )

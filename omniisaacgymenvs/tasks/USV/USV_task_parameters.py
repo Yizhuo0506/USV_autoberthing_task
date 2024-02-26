@@ -58,11 +58,11 @@ class GoToPoseParameters:
 
     position_tolerance: float = 0.01
     heading_tolerance: float = 0.025
-    kill_after_n_steps_in_tolerance: int = 50
+    kill_after_n_steps_in_tolerance: int = 500
     goal_random_position: float = 0.0
-    max_spawn_dist: float = 6.0
-    min_spawn_dist: float = 3.0
-    kill_dist: float = 8.0
+    max_spawn_dist: float = 3.0
+    min_spawn_dist: float = 0.5
+    kill_dist: float = 10.0
 
     spawn_curriculum: bool = False
     spawn_curriculum_min_dist: float = 0.5
