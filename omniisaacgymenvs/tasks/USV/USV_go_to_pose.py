@@ -138,7 +138,7 @@ class GoToPoseTask(Core):
 
         return self.position_reward + self.heading_reward
 
-    def update_kills(self) -> torch.Tensor:
+    def update_kills(self, step) -> torch.Tensor:
         """
         Updates if the platforms should be killed or not."""
 

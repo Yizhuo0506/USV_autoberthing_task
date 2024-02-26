@@ -18,22 +18,22 @@ class GoToXYParameters:
     """
     Parameters for the GoToXY task."""
 
-    position_tolerance: float = 0.2
+    position_tolerance: float = 0.1
     kill_after_n_steps_in_tolerance: int = 1
     goal_random_position: float = 0.0
-    max_spawn_dist: float = 10.0
-    min_spawn_dist: float = 3.0
+    max_spawn_dist: float = 10.5
+    min_spawn_dist: float = 0.5
     kill_dist: float = 20.0
     boundary_cost: float = 25
     goal_reward: float = 1000.0
 
     spawn_curriculum: bool = False
-    spawn_curriculum_min_dist: float = 0.5
-    spawn_curriculum_max_dist: float = 2.5
-    spawn_curriculum_kill_dist: float = 3.0
+    spawn_curriculum_min_dist: float = 0.2
+    spawn_curriculum_max_dist: float = 3.0
+    spawn_curriculum_kill_dist: float = 30.0
     spawn_curriculum_mode: str = "linear"
     spawn_curriculum_warmup: int = 250
-    spawn_curriculum_end: int = 750
+    spawn_curriculum_end: int = 1000
 
     def __post_init__(self) -> None:
         """

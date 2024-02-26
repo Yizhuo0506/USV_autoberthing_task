@@ -19,7 +19,8 @@ class GoToXYReward:
     """ "
     Reward function and parameters for the GoToXY task."""
 
-    reward_mode: str = "linear"
+    reward_mode: str = "exponential"
+    position_scale: float = 1.0
     exponential_reward_coeff: float = 0.25
 
     def __post_init__(self) -> None:
@@ -37,17 +38,24 @@ class GoToXYReward:
         current_state: torch.Tensor,
         actions: torch.Tensor,
         position_error: torch.Tensor,
+        prev_position_error: torch.Tensor,
     ) -> torch.Tensor:
         """
         Defines the function used to compute the reward for the GoToXY task."""
 
         if self.reward_mode.lower() == "linear":
-            position_reward = -0.1 - position_error
-            # position_reward = 1.0 / (1.0 + position_error)
+            position_reward = self.position_scale * (
+                prev_position_error - position_error
+            )
         elif self.reward_mode.lower() == "square":
-            position_reward = 1.0 / (1.0 + position_error * position_error)
+            position_reward = self.position_scale * (
+                prev_position_error.pow(2) - position_error.pow(2)
+            )
         elif self.reward_mode.lower() == "exponential":
-            position_reward = torch.exp(-position_error / self.exponential_reward_coeff)
+            position_reward = self.position_scale * (
+                torch.exp(-position_error / self.exponential_reward_coeff)
+                - torch.exp(-prev_position_error / self.exponential_reward_coeff)
+            )
         else:
             raise ValueError("Unknown reward type.")
         return position_reward
@@ -58,12 +66,15 @@ class GoToPoseReward:
     """
     Reward function and parameters for the GoToPose task."""
 
-    position_reward_mode: str = "linear"
-    heading_reward_mode: str = "linear"
+    position_reward_mode: str = "exponential"
+    heading_reward_mode: str = "exponential"
     position_exponential_reward_coeff: float = 0.25
     heading_exponential_reward_coeff: float = 0.25
     position_scale: float = 1.0
     heading_scale: float = 1.0
+    dist_head_weight: float = (
+        0.25  # Ensure 0 < dist_head_weight < 1 for the intended effect
+    )
 
     def __post_init__(self) -> None:
         """
@@ -88,23 +99,44 @@ class GoToPoseReward:
         heading_error: torch.Tensor,
     ) -> None:
         """
-        Defines the function used to compute the reward for the GoToPose task."""
+        Defines the function used to compute the reward for the GoToPose task.
+        d + k^d * h
+        k^d is weighting term, where k is 0<k<1
+        """
+        # Adjust heading reward based on distance to goal
+        heading_weight_factor = torch.pow(self.dist_head_weight, position_error)
 
         if self.position_reward_mode.lower() == "linear":
-            position_reward = 1.0 / (1.0 + position_error) * self.position_scale
+            position_reward = self.position_scale * (1.0 / (1.0 + position_error))
         elif self.position_reward_mode.lower() == "square":
-            position_reward = 1.0 / (1.0 + position_error) * self.position_scale
+            position_reward = self.position_scale * (
+                1.0 / (1.0 + position_error * position_error)
+            )
         elif self.position_reward_mode.lower() == "exponential":
-            position_reward = torch.exp(-position_error / 0.25) * self.position_scale
+            position_reward = self.position_scale * torch.exp(
+                -position_error / self.position_exponential_reward_coeff
+            )
         else:
             raise ValueError("Unknown reward type.")
 
         if self.heading_reward_mode.lower() == "linear":
-            heading_reward = 1.0 / (1.0 + heading_error) * self.heading_scale
+            heading_reward = (
+                heading_weight_factor
+                * self.heading_scale
+                * (1.0 / (1.0 + heading_error))
+            )
         elif self.heading_reward_mode.lower() == "square":
-            heading_reward = 1.0 / (1.0 + heading_error) * self.heading_scale
+            heading_reward = (
+                heading_weight_factor
+                * self.heading_scale
+                * (1.0 / (1.0 + heading_error * heading_error))
+            )
         elif self.heading_reward_mode.lower() == "exponential":
-            heading_reward = torch.exp(-heading_error / 0.25) * self.heading_scale
+            heading_reward = (
+                heading_weight_factor
+                * self.heading_scale
+                * torch.exp(-heading_error / self.heading_exponential_reward_coeff)
+            )
         else:
             raise ValueError("Unknown reward type.")
         return position_reward, heading_reward
@@ -115,7 +147,7 @@ class TrackXYVelocityReward:
     """
     Reward function and parameters for the TrackXYVelocity task."""
 
-    reward_mode: str = "linear"
+    reward_mode: str = "exponential"
     exponential_reward_coeff: float = 0.25
 
     def __post_init__(self) -> None:
@@ -153,8 +185,8 @@ class TrackXYOVelocityReward:
     """
     Reward function and parameters for the TrackXYOVelocity task."""
 
-    linear_reward_mode: str = "linear"
-    angular_reward_mode: str = "linear"
+    linear_reward_mode: str = "exponential"
+    angular_reward_mode: str = "exponential"
     linear_exponential_reward_coeff: float = 0.25
     angular_exponential_reward_coeff: float = 0.25
     linear_scale: float = 1.0

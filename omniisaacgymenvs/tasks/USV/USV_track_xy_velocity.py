@@ -61,7 +61,9 @@ class TrackXYVelocityTask(Core):
             stats["velocity_error"] = torch_zeros()
         return stats
 
-    def get_state_observations(self, current_state: dict) -> torch.Tensor:
+    def get_state_observations(
+        self, current_state: dict, observation_frame: str
+    ) -> torch.Tensor:
         """
         Computes the observation tensor from the current state of the robot."""
 
@@ -70,7 +72,7 @@ class TrackXYVelocityTask(Core):
         )
         self._position_error = current_state["position"]
         self._task_data[:, :2] = self._velocity_error
-        return self.update_observation_tensor(current_state)
+        return self.update_observation_tensor(current_state, observation_frame)
 
     def compute_reward(
         self, current_state: torch.Tensor, actions: torch.Tensor

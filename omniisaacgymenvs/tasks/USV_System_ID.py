@@ -18,9 +18,6 @@ from omniisaacgymenvs.robots.articulations.views.heron_view import (
 from omniisaacgymenvs.utils.pin import VisualPin
 from omniisaacgymenvs.utils.arrow import VisualArrow
 
-from omniisaacgymenvs.tasks.USV.USV_thruster_generator import (
-    VirtualPlatform,
-)
 from omniisaacgymenvs.tasks.USV.USV_task_factory import (
     task_factory,
 )
@@ -231,12 +228,9 @@ class USVSystemID(RLTask):
         # Instantiate the task, reward and platform
         self.task = task_factory.get(task_cfg, reward_cfg, self._num_envs, self._device)
         self._penalties = parse_data_dict(Penalties(), penalty_cfg)
-        self.virtual_platform = VirtualPlatform(
-            self._num_envs, self._heron_cfg, self._device
-        )
         self._num_observations = self.task._num_observations
-        self._max_actions = self.virtual_platform._max_thrusters
-        self._num_actions = self.virtual_platform._max_thrusters
+        self._max_actions = 2  # Number of thrusters
+        self._num_actions = 2  # Number of thrusters
         RLTask.__init__(self, name, env)
         # Instantiate the action and observations spaces
         self.set_action_and_observation_spaces()
@@ -324,8 +318,6 @@ class USVSystemID(RLTask):
                     np.ones(self._num_observations) * -np.Inf,
                     np.ones(self._num_observations) * np.Inf,
                 ),
-                "transforms": spaces.Box(low=-1, high=1, shape=(self._max_actions, 5)),
-                "masks": spaces.Box(low=0, high=1, shape=(self._max_actions,)),
             }
         )
 
@@ -369,16 +361,6 @@ class USVSystemID(RLTask):
         self.obs_buf = {
             "state": torch.zeros(
                 (self._num_envs, self._num_observations),
-                device=self._device,
-                dtype=torch.float,
-            ),
-            "transforms": torch.zeros(
-                (self._num_envs, self._max_actions, 5),
-                device=self._device,
-                dtype=torch.float,
-            ),
-            "masks": torch.zeros(
-                (self._num_envs, self._max_actions),
                 device=self._device,
                 dtype=torch.float,
             ),
@@ -595,10 +577,6 @@ class USVSystemID(RLTask):
         self.obs_buf["state"] = self.task.get_state_observations(
             self.current_state, self._observation_frame
         )
-        # Get thruster transforms
-        self.obs_buf["transforms"] = self.virtual_platform.current_transforms
-        # Get the action masks
-        self.obs_buf["masks"] = self.virtual_platform.action_masks
 
         observations = {self._heron.name: {"obs_buf": self.obs_buf}}
 
@@ -958,7 +936,6 @@ class USVSystemID(RLTask):
         num_resets = len(env_ids)
         # Resets the counter of steps for which the goal was reached
         self.task.reset(env_ids)
-        # self.virtual_platform.randomize_thruster_state(env_ids, num_resets)
         # Randomizes the starting position of the platform within a disk around the target
         root_pos = torch.zeros_like(self.root_pos)
         root_pos[env_ids, :2] = positions
@@ -991,7 +968,6 @@ class USVSystemID(RLTask):
         num_resets = len(env_ids)
         # Resets the counter of steps for which the goal was reached
         self.task.reset(env_ids)
-        self.virtual_platform.randomize_thruster_state(env_ids, num_resets)
         self.UF.generate_floor(env_ids, num_resets)
         self.TD.generate_torque(env_ids, num_resets)
         self.MDD.randomize_masses(env_ids, num_resets)

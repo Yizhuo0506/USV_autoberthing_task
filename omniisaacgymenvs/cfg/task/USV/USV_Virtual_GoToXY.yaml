@@ -8,7 +8,7 @@ experiment: USV_Virtual_GoToXY
 env:
   numEnvs: ${resolve_default:64,${...num_envs}}
   envSpacing: 12
-  maxEpisodeLength: 700
+  maxEpisodeLength: 300
   enableDebugVis: False
   action_mode: Continuous
   numQuantizedActions: 1
@@ -57,7 +57,7 @@ env:
       # Add noisy observations
       add_noise_on_pos: False 
       position_noise_min: -0.01 # default - 0.01 
-      position_noise_max:  0.01 # default 0.01
+      position_noise_max:  0.01 # default - 0.01 
       add_noise_on_vel: False
       velocity_noise_min: -0.01
       velocity_noise_max:  0.01
@@ -81,10 +81,10 @@ env:
 
   task_parameters: 
     name: GoToXY
-    position_tolerance: 0.2 # 0.01 default
+    position_tolerance: 0.1 # 0.01 default
     kill_after_n_steps_in_tolerance: 1 # 50 default = 10seconds
     max_spawn_dist: 10.0
-    min_spawn_dist: 3.0
+    min_spawn_dist: 0.3
     kill_dist: 20.0
     boundary_cost: 25
     goal_reward: 1000
@@ -138,7 +138,7 @@ env:
       save_path: "config.png"
 
 sim:
-  dt: 0.02
+  dt: 0.01
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
   add_ground_plane: True
@@ -213,17 +213,12 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 1.336592]
+    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 6]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240215 [0, 15.79776044, 100, 13, 13, 1.336592]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 26.63435271]
+    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 5]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240215 [18.0676721, 2.7617212, 10, 5, 5, 26.63435271]
-
-
-    # From Heron Simulator
-    # Linear damping: [-16.44998712 -15.79776044 -100 -13 -13 -6]
-    # Quadratic damping: [-2.942 -2.7617212 -10 -5 -5 -5]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0
@@ -237,7 +232,9 @@ dynamics:
     amplify_torque: 1.0
     material_density: 133
     water_density: 1000
-    mass: 34.0 
+    mass: 28.0
+    # UUV 28.0, Real 34.0
+    # Moment of Inertia : UUV 10.0, Real(estimated) 7.846
     box_width: 1.0
     box_length: 1.3
     waterplane_area: 0.233333 # Default: 0.233333, to satisfy Kingfisher/Heron draught 120mm

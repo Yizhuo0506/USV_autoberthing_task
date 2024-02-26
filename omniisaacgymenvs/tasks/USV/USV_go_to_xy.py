@@ -52,6 +52,11 @@ class GoToXYTask(Core):
             (self._num_envs, 2), device=self._device, dtype=torch.float32
         )
         self._task_label = self._task_label * 0
+        
+        # Initialize prev_position_dist with zeros
+        self.prev_position_dist = torch.zeros(
+            (self._num_envs), device=self._device, dtype=torch.float32
+        )
 
     def create_stats(self, stats: dict) -> dict:
         """
@@ -105,6 +110,7 @@ class GoToXYTask(Core):
         self.position_dist = torch.sqrt(torch.square(self._position_error).sum(-1))
 
         self.boundary_dist = self.position_dist - self._task_parameters.kill_dist
+
         self.boundary_penalty = (
             -torch.exp(-self.boundary_dist / 0.25) * self._task_parameters.boundary_cost
         )
@@ -118,7 +124,7 @@ class GoToXYTask(Core):
 
         # Rewards
         self.position_reward = self._reward_parameters.compute_reward(
-            current_state, actions, self.position_dist
+            current_state, actions, self.position_dist, self.prev_position_dist
         )
 
         # Add reward for reaching the goal
@@ -126,17 +132,41 @@ class GoToXYTask(Core):
             self._goal_reached * self._task_parameters.goal_reward
         ).float()
 
+        # Save position_dist for next calculation, as prev_position_dist
+        self.prev_position_dist = self.position_dist
+
         return self.position_reward
 
-    def update_kills(self) -> torch.Tensor:
+    def update_kills(self, step) -> torch.Tensor:
         """
         Updates if the platforms should be killed or not."""
 
         die = torch.zeros_like(self._goal_reached, dtype=torch.long)
         ones = torch.ones_like(self._goal_reached, dtype=torch.long)
-        die = torch.where(
-            self.position_dist > self._task_parameters.kill_dist, ones, die
-        )
+
+        # Run curriculum if selected
+        if self._task_parameters.spawn_curriculum:
+            if step < self._task_parameters.spawn_curriculum_warmup:
+                kill_dist = self._task_parameters.spawn_curriculum_kill_dist
+            elif step > self._task_parameters.spawn_curriculum_end:
+                kill_dist = self._task_parameters.kill_dist
+            else:
+                r = (step - self._task_parameters.spawn_curriculum_warmup) / (
+                    self._task_parameters.spawn_curriculum_end
+                    - self._task_parameters.spawn_curriculum_warmup
+                )
+                kill_dist = (
+                    r
+                    * (
+                        self._task_parameters.kill_dist
+                        - self._task_parameters.spawn_curriculum_kill_dist
+                    )
+                    + self._task_parameters.spawn_curriculum_kill_dist
+                )
+        else:
+            kill_dist = self._task_parameters.kill_dist
+
+        die = torch.where(self.position_dist > kill_dist, ones, die)
         die = torch.where(
             self._goal_reached
             >= self._task_parameters.kill_after_n_steps_in_tolerance,  # self._goal_reached > self._task_parameters.kill_after_n_steps_in_tolerance,
@@ -193,6 +223,9 @@ class GoToXYTask(Core):
         num_resets = len(env_ids)
         # Resets the counter of steps for which the goal was reached
         self._goal_reached[env_ids] = 0
+
+        # Debug : print the step
+        # print(f"step: {step}")
         # Run curriculum if selected
         if self._task_parameters.spawn_curriculum:
             if step < self._task_parameters.spawn_curriculum_warmup:
