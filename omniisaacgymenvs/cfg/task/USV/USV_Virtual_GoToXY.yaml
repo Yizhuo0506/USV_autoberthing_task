@@ -95,7 +95,7 @@ env:
     exponential_reward_coeff: 0.25
 
   penalties_parameters:
-    penalize_energy: False
+    penalize_energy: True
     penalize_energy_fn: "lambda x,step: -torch.abs(x)*0.01" # 0.01 default
     penalize_energy_c1: 0.01 # 0.01 default
     penalize_energy_c2: 0.00

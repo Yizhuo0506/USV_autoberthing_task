@@ -94,8 +94,9 @@ env:
     position_exponential_reward_coeff: 0.25
     heading_exponential_reward_coeff: 0.25
     position_scale: 1.0
-    heading_scale: 1.0
-    dist_head_weight: 0.25
+    heading_scale: 5.0
+    sig_gain: 3.0
+
 
   platform:
     randomization:

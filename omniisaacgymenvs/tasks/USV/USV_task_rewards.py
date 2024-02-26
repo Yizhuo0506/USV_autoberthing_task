@@ -71,10 +71,12 @@ class GoToPoseReward:
     position_exponential_reward_coeff: float = 0.25
     heading_exponential_reward_coeff: float = 0.25
     position_scale: float = 1.0
-    heading_scale: float = 1.0
-    dist_head_weight: float = (
-        0.25  # Ensure 0 < dist_head_weight < 1 for the intended effect
-    )
+    heading_scale: float = 5.0
+    sig_gain: float = 3.0
+
+    def sigmoid(self, x, gain=3.0, offset=2):
+        """Sigmoid function for dynamic weighting."""
+        return 1 / (1 + torch.exp(-gain * (x - offset)))
 
     def __post_init__(self) -> None:
         """
@@ -104,7 +106,7 @@ class GoToPoseReward:
         k^d is weighting term, where k is 0<k<1
         """
         # Adjust heading reward based on distance to goal
-        heading_weight_factor = torch.pow(self.dist_head_weight, position_error)
+        heading_weight_factor = 1.0 - self.sigmoid(position_error, self.sig_gain)
 
         if self.position_reward_mode.lower() == "linear":
             position_reward = self.position_scale * (1.0 / (1.0 + position_error))
