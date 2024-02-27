@@ -229,7 +229,7 @@ dynamics:
     material_density: 133
     water_density: 1000
     mass: 28.0
-    # UUV 28.0, Real 34.0
+    # UUV 28.0, Real 35.0
     # Moment of Inertia : UUV 10.0, Real(estimated) 7.846
     box_width: 1.0
     box_length: 1.3

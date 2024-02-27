@@ -181,9 +181,12 @@ class USVSystemID(RLTask):
         self.numberOfPointsForInterpolation = self._task_cfg["dynamics"]["thrusters"][
             "interpolation"
         ]["numberOfPointsForInterpolation"]
-        self.interpolationPointsFromRealData = self._task_cfg["dynamics"]["thrusters"][
-            "interpolation"
-        ]["interpolationPointsFromRealData"]
+        self.interpolationPointsFromRealDataLeft = self._task_cfg["dynamics"][
+            "thrusters"
+        ]["interpolation"]["interpolationPointsFromRealDataLeft"]
+        self.interpolationPointsFromRealDataRight = self._task_cfg["dynamics"][
+            "thrusters"
+        ]["interpolation"]["interpolationPointsFromRealDataRight"]
         # least square methode
         self.neg_cmd_coeff = self._task_cfg["dynamics"]["thrusters"][
             "leastSquareMethod"
@@ -473,7 +476,8 @@ class USVSystemID(RLTask):
             timeConstant=self.timeConstant,
             dt=self.dt,
             numberOfPointsForInterpolation=self.numberOfPointsForInterpolation,
-            interpolationPointsFromRealData=self.interpolationPointsFromRealData,
+            interpolationPointsFromRealDataLeft=self.interpolationPointsFromRealDataLeft,
+            interpolationPointsFromRealDataRight=self.interpolationPointsFromRealDataRight,
             coeff_neg_commands=self.neg_cmd_coeff,
             coeff_pos_commands=self.pos_cmd_coeff,
             cmd_lower_range=self.cmd_lower_range,
@@ -1044,7 +1048,7 @@ class USVSystemID(RLTask):
 
         # resets due to misbehavior
         ones = torch.ones_like(self.reset_buf)
-        die = self.task.update_kills()
+        die = self.task.update_kills(self.step)
 
         # resets due to episode length
         self.reset_buf[:] = torch.where(
