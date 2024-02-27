@@ -142,7 +142,7 @@ class USVVirtual(RLTask):
         self.max_volume = (
             self.box_width * self.box_length * (self.heron_zero_height + 20)
         )  # TODO: Hardcoded value
-        self.box_mass = self._task_cfg["dynamics"]["hydrostatics"]["mass"]
+        self.heron_mass = self._task_cfg["dynamics"]["hydrostatics"]["mass"]
 
         # thrusters dynamics
         # interpolation
@@ -458,6 +458,8 @@ class USVVirtual(RLTask):
 
         # Collects the position and orientation of the platform
         self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
+        # Debug : root_pos
+        print(f"root_pos: {self.root_pos}")
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
         # Collects the velocity of the platform
@@ -768,8 +770,16 @@ class USVVirtual(RLTask):
         self.MDD.set_masses(self._heron.base, env_ids)
         # Randomizes the starting position of the platform within a disk around the target
         root_pos, root_rot = self.task.get_spawns(
-            env_ids, self.initial_root_pos.clone(), self.initial_root_rot.clone(), self.step
+            env_ids,
+            self.initial_root_pos.clone(),
+            self.initial_root_rot.clone(),
+            self.step,
         )
+        root_pos[:, 2] = (
+            self.heron_zero_height + (-1 * self.heron_mass / (self.waterplane_area * self.water_density))
+        )
+        # Debug : reset position z
+        # print("root_pos_z: ", root_pos[:, 2])
         # Resets the states of the joints
         self.dof_pos[env_ids, :] = torch.zeros(
             (num_resets, self._heron.num_dof), device=self._device

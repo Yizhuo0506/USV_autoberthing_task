@@ -168,7 +168,7 @@ class USVSystemID(RLTask):
         self.max_volume = (
             self.box_width * self.box_length * (self.heron_zero_height + 20)
         )  # TODO: Hardcoded value
-        self.box_mass = self._task_cfg["dynamics"]["hydrostatics"]["mass"]
+        self.heron_mass = self._task_cfg["dynamics"]["hydrostatics"]["mass"]
 
         # thrusters dynamics
         # interpolation

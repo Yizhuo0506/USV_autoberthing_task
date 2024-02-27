@@ -29,7 +29,7 @@ EPS = 1e-6  # small constant to avoid divisions by 0 and log(0)
 
 class TrackXYOVelocityTask(Core):
     """
-    Implements the GoToPose task. The robot has to reach a target position and heading.
+    Implements the TrackXYOVelocity task.
     """
 
     def __init__(self, task_param, reward_param, num_envs, device):
@@ -72,7 +72,9 @@ class TrackXYOVelocityTask(Core):
             stats["angular_velocity_error"] = torch_zeros()
         return stats
 
-    def get_state_observations(self, current_state: dict) -> torch.Tensor:
+    def get_state_observations(
+        self, current_state: dict, observation_frame: str
+    ) -> torch.Tensor:
         """
         Computes the observation tensor from the current state of the robot.""" ""
 
@@ -85,7 +87,7 @@ class TrackXYOVelocityTask(Core):
         self._position_error = current_state["position"]
         self._task_data[:, :2] = self._linear_velocity_error
         self._task_data[:, 2] = self._angular_velocity_error
-        return self.update_observation_tensor(current_state)
+        return self.update_observation_tensor(current_state, observation_frame)
 
     def compute_reward(
         self, current_state: torch.Tensor, actions: torch.Tensor
@@ -126,7 +128,7 @@ class TrackXYOVelocityTask(Core):
 
         return self.linear_velocity_reward + self.angular_velocity_reward
 
-    def update_kills(self) -> torch.Tensor:
+    def update_kills(self, step) -> torch.Tensor:
         """
         Updates if the platforms should be killed or not."""
 
