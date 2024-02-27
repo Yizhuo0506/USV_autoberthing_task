@@ -21,11 +21,12 @@ class GoToXYParameters:
     position_tolerance: float = 0.1
     kill_after_n_steps_in_tolerance: int = 1
     goal_random_position: float = 0.0
-    max_spawn_dist: float = 10.5
+    max_spawn_dist: float = 11
     min_spawn_dist: float = 0.5
     kill_dist: float = 20.0
     boundary_cost: float = 25
-    goal_reward: float = 1000.0
+    goal_reward: float = 100.0
+    time_reward: float = -0.1
 
     spawn_curriculum: bool = False
     spawn_curriculum_min_dist: float = 0.2

@@ -459,7 +459,7 @@ class USVVirtual(RLTask):
         # Collects the position and orientation of the platform
         self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
         # Debug : root_pos
-        print(f"root_pos: {self.root_pos}")
+        # print(f"root_pos: {self.root_pos}")
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
         # Collects the velocity of the platform
@@ -831,13 +831,13 @@ class USVVirtual(RLTask):
         Calculates the metrics of the training.
         That is the rewards, penalties, and other perfomance statistics."""
 
-        position_reward = self.task.compute_reward(self.current_state, self.actions)
+        overall_reward = self.task.compute_reward(self.current_state, self.actions)
         self.step += 1 / self._task_cfg["env"]["horizon_length"]
         penalties = self._penalties.compute_penalty(
             self.current_state, self.actions, self.step
         )
         # print("penalties: ", penalties)
-        self.rew_buf[:] = position_reward + penalties
+        self.rew_buf[:] = overall_reward + penalties
         self.episode_sums = self.task.update_statistics(self.episode_sums)
         self.episode_sums = self._penalties.update_statistics(self.episode_sums)
         self.update_state_statistics()

@@ -52,7 +52,7 @@ class GoToXYTask(Core):
             (self._num_envs, 2), device=self._device, dtype=torch.float32
         )
         self._task_label = self._task_label * 0
-        
+
         # Initialize prev_position_dist with zeros
         self.prev_position_dist = torch.zeros(
             (self._num_envs), device=self._device, dtype=torch.float32
@@ -128,14 +128,12 @@ class GoToXYTask(Core):
         )
 
         # Add reward for reaching the goal
-        self.position_reward += (
-            self._goal_reached * self._task_parameters.goal_reward
-        ).float()
+        goal_reward = (self._goal_reached * self._task_parameters.goal_reward).float()
 
         # Save position_dist for next calculation, as prev_position_dist
         self.prev_position_dist = self.position_dist
 
-        return self.position_reward
+        return self.position_reward + goal_reward + self._task_parameters.time_reward
 
     def update_kills(self, step) -> torch.Tensor:
         """
