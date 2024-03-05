@@ -85,9 +85,9 @@ class MassDistributionDisturbances:
             body.set_masses(self.platforms_mass[idx, 0], indices=idx)
 
 
-class UnevenFloorDisturbance:
+class ForceDisturbance:
     """
-    Creates disturbances on the platform by simulating an uneven floor."""
+    Creates force disturbance."""
 
     def __init__(self, task_cfg: dict, num_envs: int, device: str) -> None:
         """
@@ -95,16 +95,16 @@ class UnevenFloorDisturbance:
             task_cfg (dict): The task configuration.
             num_envs (int): The number of environments.
             device (str): The device on which the tensors are stored."""
-        self._use_uneven_floor = task_cfg["use_uneven_floor"]
-        self._use_sinusoidal_floor = task_cfg["use_sinusoidal_floor"]
-        self._min_freq = task_cfg["floor_min_freq"]
-        self._max_freq = task_cfg["floor_max_freq"]
-        self._min_offset = task_cfg["floor_min_offset"]
-        self._max_offset = task_cfg["floor_max_offset"]
-        self._max_floor_force = task_cfg["max_floor_force"]
-        self._min_floor_force = task_cfg["min_floor_force"]
-        self._max_floor_force = math.sqrt(self._max_floor_force**2 / 2)
-        self._min_floor_force = math.sqrt(self._min_floor_force**2 / 2)
+        self._use_force_disturbance = task_cfg["use_force_disturbance"]
+        self._use_sinusoidal_force = task_cfg["use_sinusoidal_force"]
+        self._min_freq = task_cfg["force_min_freq"]
+        self._max_freq = task_cfg["force_max_freq"]
+        self._min_offset = task_cfg["force_min_offset"]
+        self._max_offset = task_cfg["force_max_offset"]
+        self._max_force = task_cfg["max_force"]
+        self._min_force = task_cfg["min_force"]
+        self._max_force = math.sqrt(self._max_force**2 / 2)
+        self._min_force = math.sqrt(self._min_force**2 / 2)
         self._num_envs = num_envs
         self._device = device
 
@@ -112,51 +112,51 @@ class UnevenFloorDisturbance:
 
     def instantiate_buffers(self) -> None:
         """
-        Instantiates the buffers used to store the uneven floor disturbances."""
+        Instantiates the buffers used to store the force disturbances."""
 
-        if self._use_sinusoidal_floor:
-            self._floor_x_freq = torch.zeros(
+        if self._use_sinusoidal_force:
+            self._force_x_freq = torch.zeros(
                 (self._num_envs), device=self._device, dtype=torch.float32
             )
-            self._floor_y_freq = torch.zeros(
+            self._force_y_freq = torch.zeros(
                 (self._num_envs), device=self._device, dtype=torch.float32
             )
-            self._floor_x_offset = torch.zeros(
+            self._force_x_offset = torch.zeros(
                 (self._num_envs), device=self._device, dtype=torch.float32
             )
-            self._floor_y_offset = torch.zeros(
+            self._force_y_offset = torch.zeros(
                 (self._num_envs), device=self._device, dtype=torch.float32
             )
 
-        self.floor_forces = torch.zeros(
+        self.disturbance_forces = torch.zeros(
             (self._num_envs, 3), device=self._device, dtype=torch.float32
         )
 
-    def generate_floor(self, env_ids: torch.Tensor, num_resets: int) -> None:
+    def generate_force(self, env_ids: torch.Tensor, num_resets: int) -> None:
         """
-        Generates the uneven floor.
+        Generates the forces.
 
         Args:
             env_ids (torch.Tensor): The ids of the environments to reset.
             num_resets (int): The number of resets to perform."""
 
-        if self._use_sinusoidal_floor:
-            self._floor_x_freq[env_ids] = (
+        if self._use_sinusoidal_force:
+            self._force_x_freq[env_ids] = (
                 torch.rand(num_resets, dtype=torch.float32, device=self._device)
                 * (self._max_freq - self._min_freq)
                 + self._min_freq
             )
-            self._floor_y_freq[env_ids] = (
+            self._force_y_freq[env_ids] = (
                 torch.rand(num_resets, dtype=torch.float32, device=self._device)
                 * (self._max_freq - self._min_freq)
                 + self._min_freq
             )
-            self._floor_x_offset[env_ids] = (
+            self._force_x_offset[env_ids] = (
                 torch.rand(num_resets, dtype=torch.float32, device=self._device)
                 * (self._max_offset - self._min_offset)
                 + self._min_offset
             )
-            self._floor_y_offset[env_ids] = (
+            self._force_y_offset[env_ids] = (
                 torch.rand(num_resets, dtype=torch.float32, device=self._device)
                 * (self._max_offset - self._min_offset)
                 + self._min_offset
@@ -164,38 +164,38 @@ class UnevenFloorDisturbance:
         else:
             r = (
                 torch.rand((num_resets), dtype=torch.float32, device=self._device)
-                * (self._max_floor_force - self._min_floor_force)
-                + self._min_floor_force
+                * (self._max_force - self._min_force)
+                + self._min_force
             )
             theta = (
                 torch.rand((num_resets), dtype=torch.float32, device=self._device)
                 * math.pi
                 * 2
             )
-            self.floor_forces[env_ids, 0] = torch.cos(theta) * r
-            self.floor_forces[env_ids, 1] = torch.sin(theta) * r
+            self.disturbance_forces[env_ids, 0] = torch.cos(theta) * r
+            self.disturbance_forces[env_ids, 1] = torch.sin(theta) * r
 
-    def get_floor_forces(self, root_pos: torch.Tensor) -> torch.Tensor:
+    def get_disturbance_forces(self, root_pos: torch.Tensor) -> torch.Tensor:
         """
-        Computes the floor forces for the current state of the robot.
+        Computes the disturbance forces for the current state of the robot.
 
         Args:
             root_pos (torch.Tensor): The position of the root of the robot.
 
         Returns:
-            torch.Tensor: The floor forces."""
+            torch.Tensor: The disturbance forces."""
 
-        if self._use_sinusoidal_floor:
-            self.floor_forces[:, 0] = (
-                torch.sin(root_pos[:, 0] * self._floor_x_freq + self._floor_x_offset)
-                * self._max_floor_force
+        if self._use_sinusoidal_force:
+            self.disturbance_forces[:, 0] = (
+                torch.sin(root_pos[:, 0] * self._force_x_freq + self._force_x_offset)
+                * self._max_force
             )
-            self.floor_forces[:, 1] = (
-                torch.sin(root_pos[:, 1] * self._floor_y_freq + self._floor_y_offset)
-                * self._max_floor_force
+            self.disturbance_forces[:, 1] = (
+                torch.sin(root_pos[:, 1] * self._force_y_freq + self._force_y_offset)
+                * self._max_force
             )
 
-        return self.floor_forces
+        return self.disturbance_forces
 
 
 class TorqueDisturbance:
@@ -210,17 +210,17 @@ class TorqueDisturbance:
             num_envs (int): The number of environments.
             device (str): The device on which the tensors are stored."""
 
-        # Uneven floor generation
+        # Disturbance torque generation
         self._use_torque_disturbance = task_cfg["use_torque_disturbance"]
         self._use_sinusoidal_torque = task_cfg["use_sinusoidal_torque"]
         self._max_torque = task_cfg["max_torque"]
         self._min_torque = task_cfg["min_torque"]
 
-        # use the same min/max frequencies and offsets for the floor
-        self._min_freq = task_cfg["floor_min_freq"]
-        self._max_freq = task_cfg["floor_max_freq"]
-        self._min_offset = task_cfg["floor_min_offset"]
-        self._max_offset = task_cfg["floor_max_offset"]
+        # use the same min/max frequencies and offsets for the force
+        self._min_freq = task_cfg["torque_min_freq"]
+        self._max_freq = task_cfg["torque_max_freq"]
+        self._min_offset = task_cfg["torque_min_offset"]
+        self._max_offset = task_cfg["torque_max_offset"]
         self._num_envs = num_envs
         self._device = device
 
@@ -228,7 +228,7 @@ class TorqueDisturbance:
 
     def instantiate_buffers(self) -> None:
         """
-        Instantiates the buffers used to store the uneven floor disturbances."""
+        Instantiates the buffers used to store the disturbances."""
 
         if self._use_sinusoidal_torque:
             self._torque_freq = torch.zeros(
@@ -251,7 +251,7 @@ class TorqueDisturbance:
             num_resets (int): The number of resets to perform."""
 
         if self._use_sinusoidal_torque:
-            #  use the same min/max frequencies and offsets for the floor
+            #  use the same min/max frequencies and offsets for the force
             self._torque_freq[env_ids] = (
                 torch.rand(num_resets, dtype=torch.float32, device=self._device)
                 * (self._max_freq - self._min_freq)
@@ -276,7 +276,7 @@ class TorqueDisturbance:
 
     def get_torque_disturbance(self, root_pos: torch.Tensor) -> torch.Tensor:
         """
-        Computes the floor forces for the current state of the robot.
+        Computes the torques for the current state of the robot.
 
         Args:
             root_pos (torch.Tensor): The position of the root of the robot.
@@ -286,7 +286,10 @@ class TorqueDisturbance:
 
         if self._use_sinusoidal_torque:
             self.torque_forces[:, 2] = (
-                torch.sin(root_pos * self._torque_freq + self._torque_offset)
+                torch.sin(
+                    (root_pos[:, 0] + root_pos[:, 1]) * self._torque_freq
+                    + self._torque_offset
+                )
                 * self._max_torque
             )
 

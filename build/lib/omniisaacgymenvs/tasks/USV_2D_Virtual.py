@@ -29,7 +29,7 @@ from omniisaacgymenvs.tasks.USV.USV_task_rewards import (
     Penalties,
 )
 from omniisaacgymenvs.tasks.USV.USV_disturbances import (
-    UnevenFloorDisturbance,
+    ForceDisturbance,
     TorqueDisturbance,
     NoisyObservations,
     NoisyActions,
@@ -86,7 +86,7 @@ class USV2DVirtual(RLTask):
         self.split_thrust = self._task_cfg["env"]["split_thrust"]
 
         # Domain randomization and adaptation
-        self.UF = UnevenFloorDisturbance(
+        self.UF = ForceDisturbance(
             self._task_cfg["env"]["disturbances"]["forces"],
             self._num_envs,
             self._device,
@@ -782,7 +782,7 @@ class USV2DVirtual(RLTask):
         # Resets the counter of steps for which the goal was reached
         self.task.reset(env_ids)
         self.virtual_platform.randomize_thruster_state(env_ids, num_resets)
-        self.UF.generate_floor(env_ids, num_resets)
+        self.UF.generate_force(env_ids, num_resets)
         self.TD.generate_torque(env_ids, num_resets)
         self.MDD.randomize_masses(env_ids, num_resets)
         self.MDD.set_masses(self._heron.base, env_ids)

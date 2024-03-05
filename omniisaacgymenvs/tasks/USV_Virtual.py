@@ -26,7 +26,7 @@ from omniisaacgymenvs.tasks.USV.USV_task_rewards import (
     Penalties,
 )
 from omniisaacgymenvs.tasks.USV.USV_disturbances import (
-    UnevenFloorDisturbance,
+    ForceDisturbance,
     TorqueDisturbance,
     NoisyObservations,
     NoisyActions,
@@ -83,7 +83,7 @@ class USVVirtual(RLTask):
         self.split_thrust = self._task_cfg["env"]["split_thrust"]
 
         # Domain randomization and adaptation
-        self.UF = UnevenFloorDisturbance(
+        self.UF = ForceDisturbance(
             self._task_cfg["env"]["disturbances"]["forces"],
             self._num_envs,
             self._device,
@@ -575,7 +575,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        # self.actions = torch.ones_like(self.actions) * 1.0
+        self.actions = torch.ones_like(self.actions) * 0.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -611,8 +611,8 @@ class USVVirtual(RLTask):
             forces=self.forces, is_global=False
         )
         """
-        # floor_forces = self.UF.get_floor_forces(self.root_pos)
-        # torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
+        disturbance_forces = self.UF.get_disturbance_forces(self.root_pos)
+        torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
 
         # self._heron.base.apply_forces_and_torques_at_pos(
         #    forces=floor_forces + self.drag[:,:3],
@@ -649,8 +649,8 @@ class USVVirtual(RLTask):
         # self.thrusters[:,:] *= self.box_is_under_water.mT
 
         self._heron.base.apply_forces_and_torques_at_pos(
-            forces=self.hydrostatic_force[:, :3] + self.drag[:, :3],
-            torques=self.hydrostatic_force[:, 3:] + self.drag[:, 3:],
+            forces= disturbance_forces + self.hydrostatic_force[:, :3] + self.drag[:, :3],
+            torques= torque_disturbance + self.hydrostatic_force[:, 3:] + self.drag[:, 3:],
             is_global=False,
         )
         # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)
@@ -764,7 +764,7 @@ class USVVirtual(RLTask):
         num_resets = len(env_ids)
         # Resets the counter of steps for which the goal was reached
         self.task.reset(env_ids)
-        self.UF.generate_floor(env_ids, num_resets)
+        self.UF.generate_force(env_ids, num_resets)
         self.TD.generate_torque(env_ids, num_resets)
         self.MDD.randomize_masses(env_ids, num_resets)
         self.MDD.set_masses(self._heron.base, env_ids)
@@ -775,8 +775,8 @@ class USVVirtual(RLTask):
             self.initial_root_rot.clone(),
             self.step,
         )
-        root_pos[:, 2] = (
-            self.heron_zero_height + (-1 * self.heron_mass / (self.waterplane_area * self.water_density))
+        root_pos[:, 2] = self.heron_zero_height + (
+            -1 * self.heron_mass / (self.waterplane_area * self.water_density)
         )
         # Debug : reset position z
         # print("root_pos_z: ", root_pos[:, 2])
