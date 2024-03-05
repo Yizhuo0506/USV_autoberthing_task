@@ -12,6 +12,9 @@ from omniisaacgymenvs.tasks.USV.USV_go_to_xy import GoToXYTask
 from omniisaacgymenvs.tasks.USV.USV_go_to_pose import (
     GoToPoseTask,
 )
+from omniisaacgymenvs.tasks.USV.USV_keep_xy import (
+    KeepXYTask,
+)
 from omniisaacgymenvs.tasks.USV.USV_track_xy_velocity import (
     TrackXYVelocityTask,
 )
@@ -48,6 +51,7 @@ class TaskFactory:
 task_factory = TaskFactory()
 task_factory.register("GoToXY", GoToXYTask)
 task_factory.register("GoToPose", GoToPoseTask)
+task_factory.register("KeepXY", KeepXYTask)
 task_factory.register("TrackXYVelocity", TrackXYVelocityTask)
 task_factory.register("TrackXYOVelocity", TrackXYOVelocityTask)
 # task_factory.register("TrackXYVelocityHeading", TrackXYVelocityHeadingTask)

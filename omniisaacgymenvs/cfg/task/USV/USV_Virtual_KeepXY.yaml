@@ -2,13 +2,13 @@
 name: USVVirtual
 
 physics_engine: ${..physics_engine}
-experiment: USV_Virtual_GoToXY
+experiment: USV_Virtual_KeepXY
 
 # if given, will override the device setting in gym. 
 env:
   numEnvs: ${resolve_default:64,${...num_envs}}
   envSpacing: 12
-  maxEpisodeLength: 300
+  maxEpisodeLength: 500
   enableDebugVis: False
   action_mode: Continuous
   numQuantizedActions: 1
@@ -80,10 +80,10 @@ env:
       base_mass: ${...platform.core.mass}
 
   task_parameters: 
-    name: GoToXY
+    name: KeepXY
     position_tolerance: 0.1 # 0.01 default
-    kill_after_n_steps_in_tolerance: 1 # 50 default = 10seconds
-    max_spawn_dist: 12.0
+    kill_after_n_steps_in_tolerance: 500 # 50 default = 10seconds
+    max_spawn_dist: 3.0
     min_spawn_dist: 0.3
     kill_dist: 20.0
     boundary_cost: 25.0
@@ -91,8 +91,8 @@ env:
     time_reward: -0.1
 
   reward_parameters:
-    name: GoToXY
-    reward_mode: linear
+    name: KeepXY
+    reward_mode: exponential
     exponential_reward_coeff: 0.25
 
   penalties_parameters:
@@ -214,10 +214,10 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 6]
+    linear_damping: [0, 47.39328132, 100, 13, 13, 1.336592]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240215 [0, 47.39328132, 100, 13, 13, 1.336592]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 5]
+    quadratic_damping: [18.0676721, 8.2851636, 10, 5, 5, 26.63435271]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240215 [18.0676721, 8.2851636, 10, 5, 5, 26.63435271]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]

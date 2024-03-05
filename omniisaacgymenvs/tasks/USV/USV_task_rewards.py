@@ -145,6 +145,44 @@ class GoToPoseReward:
 
 
 @dataclass
+class KeepXYReward:
+    """ "
+    Reward function and parameters for the KeepXY task."""
+
+    reward_mode: str = "linear"
+    exponential_reward_coeff: float = 0.25
+
+    def __post_init__(self) -> None:
+        """
+        Checks that the reward parameters are valid."""
+
+        assert self.reward_mode.lower() in [
+            "linear",
+            "square",
+            "exponential",
+        ], "Linear, Square and Exponential are the only currently supported mode."
+
+    def compute_reward(
+        self,
+        current_state: torch.Tensor,
+        actions: torch.Tensor,
+        position_error: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Defines the function used to compute the reward for the KeepXY task."""
+
+        if self.reward_mode.lower() == "linear":
+            position_reward = 1.0 / (1.0 + position_error)
+        elif self.reward_mode.lower() == "square":
+            position_reward = 1.0 / (1.0 + position_error * position_error)
+        elif self.reward_mode.lower() == "exponential":
+            position_reward = torch.exp(-position_error / self.exponential_reward_coeff)
+        else:
+            raise ValueError("Unknown reward type.")
+        return position_reward
+
+
+@dataclass
 class TrackXYVelocityReward:
     """
     Reward function and parameters for the TrackXYVelocity task."""

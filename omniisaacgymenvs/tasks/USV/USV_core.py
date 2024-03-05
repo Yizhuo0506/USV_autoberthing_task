@@ -170,9 +170,11 @@ class TaskDict:
     def __init__(self) -> None:
         self.gotoxy = 0
         self.gotopose = 1
-        self.trackxyvel = 2
-        self.trackxyovel = 3
-        self.trackxyvelheading = 4
+        self.keepxy = 2
+        self.keepxyo = 3
+        self.trackxyvel = 4
+        self.trackxyovel = 5
+        self.trackxyvelheading = 6
 
 
 def parse_data_dict(
