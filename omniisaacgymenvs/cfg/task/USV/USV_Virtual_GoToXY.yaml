@@ -73,11 +73,11 @@ env:
 
     mass:
       # Add mass disturbances
-      add_mass_disturbances: False
-      min_mass: 4.0
-      max_mass: 6.0
-      CoM_max_displacement: 0.25
-      base_mass: ${...platform.core.mass}
+      add_mass_disturbances: True
+      min_mass: 34.0
+      max_mass: 36.0
+      CoM_max_displacement: 0.0
+      base_mass: 35.0
 
   task_parameters: 
     name: GoToXY

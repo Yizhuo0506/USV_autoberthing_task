@@ -62,17 +62,6 @@ class MassDistributionDisturbances:
                 * (self._max_mass - self._min_mass)
                 + self._min_mass
             )
-            r = (
-                torch.rand((num_resets), dtype=torch.float32, device=self._device)
-                * self._CoM_max_displacement
-            )
-            theta = (
-                torch.rand((num_resets), dtype=torch.float32, device=self._device)
-                * math.pi
-                * 2
-            )
-            self.platforms_CoM[env_ids, 0] = torch.cos(theta) * r
-            self.platforms_CoM[env_ids, 1] = torch.sin(theta) * r
 
     def get_masses(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -94,7 +83,6 @@ class MassDistributionDisturbances:
             idx (torch.Tensor): The ids of the environments to reset."""
         if self._add_mass_disturbances:
             body.set_masses(self.platforms_mass[idx, 0], indices=idx)
-            body.set_coms(self.platforms_CoM[idx], indices=idx)
 
 
 class UnevenFloorDisturbance:
