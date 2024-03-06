@@ -575,7 +575,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        self.actions = torch.ones_like(self.actions) * 0.0
+        # self.actions = torch.ones_like(self.actions) * 0.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -592,6 +592,10 @@ class USVVirtual(RLTask):
 
         # Adds random noise on the actions
         thrusts = self.AN.add_noise_on_act(thrusts)
+        
+        # Clip the actions 
+        thrusts = torch.clamp(thrusts, -1.0, 1.0)
+        
         # clear actions for reset envs
         thrusts[reset_env_ids] = 0
         # print(self.actions)
@@ -649,8 +653,12 @@ class USVVirtual(RLTask):
         # self.thrusters[:,:] *= self.box_is_under_water.mT
 
         self._heron.base.apply_forces_and_torques_at_pos(
-            forces= disturbance_forces + self.hydrostatic_force[:, :3] + self.drag[:, :3],
-            torques= torque_disturbance + self.hydrostatic_force[:, 3:] + self.drag[:, 3:],
+            forces=disturbance_forces
+            + self.hydrostatic_force[:, :3]
+            + self.drag[:, :3],
+            torques=torque_disturbance
+            + self.hydrostatic_force[:, 3:]
+            + self.drag[:, 3:],
             is_global=False,
         )
         # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)

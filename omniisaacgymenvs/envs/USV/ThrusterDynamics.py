@@ -18,6 +18,7 @@ class Dynamics:
 
     def Reset(self):
         self.cmd_updated[:, :] = 0.0
+        # print(f"cmd_updated: {self.cmd_updated}")
 
 
 class DynamicsZeroOrder(Dynamics):

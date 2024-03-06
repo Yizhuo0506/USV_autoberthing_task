@@ -6,7 +6,7 @@ experiment: USV_Virtual_GoToXY
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:64,${...num_envs}}
+  numEnvs: ${resolve_default:1024,${...num_envs}}
   envSpacing: 12
   maxEpisodeLength: 300
   enableDebugVis: False
@@ -39,8 +39,8 @@ env:
       force_max_freq: 3
       force_min_offset: 0.0
       force_max_offset: 0.0
-      max_force: 0.5
-      min_force: 0.25
+      max_force: 3.0 # N
+      min_force: -3.0 # N
 
     torques:
       # Torque disturbance generation
@@ -50,24 +50,24 @@ env:
       torque_max_freq: 3
       torque_min_offset: 0.0
       torque_max_offset: 0.0
-      max_torque: 0.1 # Nm 
-      min_torque: 0.0
+      max_torque: 0.3 # Nm 
+      min_torque: -0.3
 
     observations:
       # Add noisy observations
       add_noise_on_pos: True
-      position_noise_min: -0.01 # default - 0.01 
-      position_noise_max:  0.01 # default - 0.01 
+      position_noise_min: -0.02 # default - 0.01 m
+      position_noise_max:  0.02 # default - 0.01 m
       add_noise_on_vel: True
-      velocity_noise_min: -0.01 # default - 0.01 
-      velocity_noise_max:  0.01 # default - 0.01 
+      velocity_noise_min: -0.01 # default - 0.01 m/s
+      velocity_noise_max:  0.01 # default - 0.01 m/s
       add_noise_on_heading: True
       heading_noise_min: -0.01 # default - 0.025
       heading_noise_max:  0.01 # default - 0.025
 
     actions:
       # Add noisy actions
-      add_noise_on_act: False
+      add_noise_on_act: True
       min_action_noise: -0.05
       max_action_noise:  0.05
 
@@ -214,12 +214,14 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 6]
+    linear_damping: [0.0, 47.39, 100.0, 13.0, 13.0, 0.83]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240215 [0, 47.39328132, 100, 13, 13, 1.336592]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 5]
+    # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
+    quadratic_damping: [17.26, 8.2851636, 10.0, 5.0, 5.0, 17.34]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240215 [18.0676721, 8.2851636, 10, 5, 5, 26.63435271]
+    # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0
