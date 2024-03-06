@@ -594,7 +594,7 @@ class USVVirtual(RLTask):
         thrusts = self.AN.add_noise_on_act(thrusts)
         
         # Clip the actions 
-        thrusts = torch.clamp(thrusts, -1.0, 1.0)
+        thrusts = torch.clamp(thrusts, -1.0, 1.0) 
         
         # clear actions for reset envs
         thrusts[reset_env_ids] = 0
