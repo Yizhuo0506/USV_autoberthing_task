@@ -33,7 +33,7 @@ env:
   disturbances:
     # Uneven floor generation
     forces:
-      use_force_disturbance: False
+      use_force_disturbance: True
       use_sinusoidal_force: True
       force_min_freq: 0.25
       force_max_freq: 3
@@ -44,7 +44,7 @@ env:
 
     torques:
       # Torque disturbance generation
-      use_torque_disturbance: False
+      use_torque_disturbance: True
       use_sinusoidal_torque: True
       torque_min_freq: 0.25
       torque_max_freq: 3
@@ -56,11 +56,11 @@ env:
     observations:
       # Add noisy observations
       add_noise_on_pos: True
-      position_noise_min: -0.02 # default - 0.01 m
-      position_noise_max:  0.02 # default - 0.01 m
+      position_noise_min: -0.03 # default - 0.01 m
+      position_noise_max:  0.03 # default - 0.01 m
       add_noise_on_vel: True
-      velocity_noise_min: -0.01 # default - 0.01 m/s
-      velocity_noise_max:  0.01 # default - 0.01 m/s
+      velocity_noise_min: -0.03 # default - 0.01 m/s
+      velocity_noise_max:  0.03 # default - 0.01 m/s
       add_noise_on_heading: True
       heading_noise_min: -0.01 # default - 0.025
       heading_noise_max:  0.01 # default - 0.025
@@ -73,26 +73,26 @@ env:
 
     mass:
       # Add mass disturbances
-      add_mass_disturbances: False
-      min_mass: 34.0
-      max_mass: 36.0
+      add_mass_disturbances: True
+      min_mass: 34.96
+      max_mass: 36.96
       CoM_max_displacement: 0.0
-      base_mass: 35.0
+      base_mass: 35.96
 
     drag:
       # Add drag disturbances
       use_drag_randomization: True
       # Proportion of drag randomization for each drag coefficient
       # Linear
-      u_linear_rand: 1.0 # Forward
-      v_linear_rand: 0.2 # Lateral
+      u_linear_rand: 0.2 # Forward
+      v_linear_rand: 0.7 # Lateral
       w_linear_rand: 0.0 # Vertical. In 2D, neglectable
       p_linear_rand: 0.0 # Roll. In 2D, neglectable
       q_linear_rand: 0.0 # Pitch. In 2D, neglectable
       r_linear_rand: 0.2 # Yaw
       # Quadratic
-      u_quad_rand: 1.0 # Forward
-      v_quad_rand: 0.2 # Lateral
+      u_quad_rand: 0.2 # Forward
+      v_quad_rand: 0.7 # Lateral
       w_quad_rand: 0.0 # Vertical. In 2D, neglectable
       p_quad_rand: 0.0 # Roll. In 2D, neglectable
       q_quad_rand: 0.0 # Pitch. In 2D, neglectable
@@ -123,7 +123,7 @@ env:
     penalize_linear_velocities_fn: "lambda x,step: -torch.norm(x, dim=-1)*0.01"
     penalize_linear_velocities_c1: 0.01
     penalize_linear_velocities_c2: 0.00
-    penalize_angular_velocities: True
+    penalize_angular_velocities: False
     penalize_angular_velocities_fn: "lambda x,step : -torch.abs(x)*0.01 + 0.0"
     penalize_angular_velocities_c1: 0.01
     penalize_angular_velocities_c2: 0.00
@@ -254,7 +254,7 @@ dynamics:
     amplify_torque: 1.0
     material_density: 133
     water_density: 1000
-    mass: 35.0
+    mass: 35.96
     # UUV 28.0, Real 35.0
     # Moment of Inertia : UUV 10.0, Real(estimated) 7.846
     box_width: 1.0

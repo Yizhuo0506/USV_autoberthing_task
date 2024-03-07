@@ -21,6 +21,7 @@ class GoToXYReward:
 
     reward_mode: str = "exponential"
     position_scale: float = 1.0
+    heading_scale: float = 1.0
     exponential_reward_coeff: float = 0.25
 
     def __post_init__(self) -> None:
@@ -39,6 +40,8 @@ class GoToXYReward:
         actions: torch.Tensor,
         position_error: torch.Tensor,
         prev_position_error: torch.Tensor,
+        heading_error: torch.Tensor,
+        prev_heading_error: torch.Tensor,
     ) -> torch.Tensor:
         """
         Defines the function used to compute the reward for the GoToXY task."""
@@ -46,15 +49,18 @@ class GoToXYReward:
         if self.reward_mode.lower() == "linear":
             position_reward = self.position_scale * (
                 prev_position_error - position_error
-            )
+            ) + self.heading_scale * (prev_heading_error - heading_error)
         elif self.reward_mode.lower() == "square":
             position_reward = self.position_scale * (
                 prev_position_error.pow(2) - position_error.pow(2)
-            )
+            ) + self.heading_scale * (prev_heading_error.pow(2) - heading_error.pow(2))
         elif self.reward_mode.lower() == "exponential":
             position_reward = self.position_scale * (
                 torch.exp(-position_error / self.exponential_reward_coeff)
                 - torch.exp(-prev_position_error / self.exponential_reward_coeff)
+            ) + self.heading_scale * (
+                torch.exp(-heading_error / self.exponential_reward_coeff)
+                - torch.exp(-prev_heading_error / self.exponential_reward_coeff)
             )
         else:
             raise ValueError("Unknown reward type.")

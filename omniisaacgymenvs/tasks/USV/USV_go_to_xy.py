@@ -58,6 +58,11 @@ class GoToXYTask(Core):
             (self._num_envs), device=self._device, dtype=torch.float32
         )
 
+        # Initialize prev_heading_error with zeros
+        self.prev_heading_error = torch.zeros(
+            (self._num_envs), device=self._device, dtype=torch.float32
+        )
+
     def create_stats(self, stats: dict) -> dict:
         """
         Creates a dictionary to store the training statistics for the task."""
@@ -91,6 +96,8 @@ class GoToXYTask(Core):
         beta = torch.atan2(self._position_error[:, 1], self._position_error[:, 0])
         # Compute the angle error
         alpha = torch.fmod(beta - theta + math.pi, 2 * math.pi) - math.pi
+        # Save the heading error, absolute of alpha
+        self.heading_error = torch.abs(alpha)
         # Convert alpha to cos and sin
         self._task_data[:, 0] = torch.cos(alpha)
         self._task_data[:, 1] = torch.sin(alpha)
@@ -124,7 +131,12 @@ class GoToXYTask(Core):
 
         # Rewards
         self.position_reward = self._reward_parameters.compute_reward(
-            current_state, actions, self.position_dist, self.prev_position_dist
+            current_state,
+            actions,
+            self.position_dist,
+            self.prev_position_dist,
+            self.heading_error,
+            self.prev_heading_error,
         )
 
         # Add reward for reaching the goal
@@ -132,6 +144,7 @@ class GoToXYTask(Core):
 
         # Save position_dist for next calculation, as prev_position_dist
         self.prev_position_dist = self.position_dist
+        self.prev_heading_error = self.heading_error
 
         return self.position_reward + goal_reward + self._task_parameters.time_reward
 
