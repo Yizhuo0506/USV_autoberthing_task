@@ -2,6 +2,7 @@ import torch
 import pytorch3d.transforms
 from omniisaacgymenvs.envs.USV.Utils import *
 
+
 class HydrodynamicsObject:
     def __init__(
         self,
@@ -57,44 +58,6 @@ class HydrodynamicsObject:
         self._last_vel_rel = torch.zeros([6], device=self.device)
 
         return
-
-    def compute_squared_drag(self, boat_velocities, quaternions):
-        """this function implements the drag, rotation drag is needed because of where archimedes is applied. if the boat start to rate around x for
-        example, since archimedes is applied onto the center, isaac sim will believe that the boat is still under water and so the boat is free to rotate around and
-        y. So to prevent this behaviour, if we don't want to create 4 rigid bodies as talked above, we are forced to add a drag + stabilizer to the simulation.
-
-        coefficients  = 0.5 * ρ * v^2 * A * Cd
-
-        ρ (rho) is the density of the surrounding fluid in kg/m³.
-        v is the velocity of the object relative to the fluid in m/s.
-        A is the reference area of the object perpendicular to the direction of motion in m². This is usually the frontal area of the object exposed to the fluid flow.
-        Cd is the drag coefficient (dimensionless) that depends on the shape and roughness of the object. This coefficient is often determined experimentally.
-
-        for our boxes, A ~ 0.2 , ρ ~ 1000, Cd ~ 0.05"""
-
-        rot_mat = self.getWorldToLocalRotationMatrix(quaternions)
-        rot_mat_inv = rot_mat.mT
-
-        local_lin_velocities = getLocalLinearVelocities(
-            boat_velocities[:, :3], rot_mat_inv
-        )
-        local_ang_velocities = getLocalAngularVelocities(
-            boat_velocities[:, 3:], rot_mat_inv
-        )
-
-        self.drag[:, :3] = -(
-            self.drag_coefficients[:, :3].mT
-            * torch.abs(local_lin_velocities).mT
-            * local_lin_velocities.mT
-        ).mT
-        self.drag[:, 3:] = -(
-            self.drag_coefficients[:, 3:].mT
-            * torch.abs(local_ang_velocities).mT
-            * local_ang_velocities.mT
-        ).mT
-        # print ("drag: ", self.drag)
-
-        return self.drag
 
     def ComputeDampingMatrix(self, vel):
         """
