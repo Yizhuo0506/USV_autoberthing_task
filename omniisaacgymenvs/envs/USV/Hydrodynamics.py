@@ -6,11 +6,11 @@ from omniisaacgymenvs.envs.USV.Utils import *
 class HydrodynamicsObject:
     def __init__(
         self,
+        task_cfg,
         num_envs,
         device,
         water_density,
         gravity,
-        drag_coefficients,
         linear_damping,
         quadratic_damping,
         linear_damping_forward_speed,
@@ -23,20 +23,46 @@ class HydrodynamicsObject:
         alpha,
         last_time,
     ):
+        self._use_drag_randomization = task_cfg["use_drag_randomization"]
+        # linear_rand range, calculated as a percentage of the base damping coefficients
+        self._linear_rand = torch.tensor(
+            [
+                task_cfg["u_linear_rand"] * linear_damping[0],
+                task_cfg["v_linear_rand"] * linear_damping[1],
+                task_cfg["w_linear_rand"] * linear_damping[2],
+                task_cfg["p_linear_rand"] * linear_damping[3],
+                task_cfg["q_linear_rand"] * linear_damping[4],
+                task_cfg["r_linear_rand"] * linear_damping[5],
+            ],
+            device=device,
+        )
+        self._quad_rand = torch.tensor(
+            [
+                task_cfg["u_quad_rand"] * quadratic_damping[0],
+                task_cfg["v_quad_rand"] * quadratic_damping[1],
+                task_cfg["w_quad_rand"] * quadratic_damping[2],
+                task_cfg["p_quad_rand"] * quadratic_damping[3],
+                task_cfg["q_quad_rand"] * quadratic_damping[4],
+                task_cfg["r_quad_rand"] * quadratic_damping[5],
+            ],
+            device=device,
+        )
+
         self._num_envs = num_envs
         self.device = device
         self.drag = torch.zeros(
             (self._num_envs, 6), dtype=torch.float32, device=self.device
         )
 
-        # damping parameters
-        self.drag_coefficients = torch.tensor(
-            [drag_coefficients], device=self.device
-        )  # 1*6
-        self.linear_damping = torch.tensor([linear_damping], device=self.device)  # 1*6
+        # damping parameters (individual set for each environment)
+        self.linear_damping_base = linear_damping
+        self.quadratic_damping_base = quadratic_damping
+        self.linear_damping = torch.tensor(
+            [linear_damping] * num_envs, device=self.device
+        )  # num_envs * 6
         self.quadratic_damping = torch.tensor(
-            [quadratic_damping], device=self.device
-        )  # 1*6
+            [quadratic_damping] * num_envs, device=self.device
+        )  # num_envs * 6
         self.linear_damping_forward_speed = torch.tensor(
             linear_damping_forward_speed, device=self.device
         )
@@ -44,6 +70,16 @@ class HydrodynamicsObject:
         self.offset_lin_forward_damping_speed = offset_lin_forward_damping_speed
         self.offset_nonlin_damping = offset_nonlin_damping
         self.scaling_damping = scaling_damping
+        # damping parameters randomization
+        if self._use_drag_randomization:
+            # Applying uniform noise as an example
+            self.linear_damping += (
+                torch.rand_like(self.linear_damping) * 2 - 1
+            ) * self._linear_rand
+            self.quadratic_damping += (
+                torch.rand_like(self.quadratic_damping) * 2 - 1
+            ) * self._quad_rand
+        print("linear_damping: ", self.linear_damping)
 
         # coriolis
         self._Ca = torch.zeros([6, 6], device=self.device)
@@ -59,6 +95,40 @@ class HydrodynamicsObject:
 
         return
 
+    def reset_coefficients(self, env_ids: torch.Tensor, num_resets: int) -> None:
+        """
+        Resets the drag coefficients for the specified environments.
+        Args:
+            env_ids (torch.Tensor): Indices of the environments to reset.
+        """
+        if self._use_drag_randomization:
+            # Generate random noise
+            noise_linear = (
+                torch.rand((len(env_ids), 6), device=self.device) * 2 - 1
+            ) * self._linear_rand
+            noise_quad = (
+                torch.rand((len(env_ids), 6), device=self.device) * 2 - 1
+            ) * self._quad_rand
+
+            # Apply noise to the linear and quadratic damping coefficients
+            # Use indexing to update only the specified environments
+            self.linear_damping[env_ids] = (
+                torch.tensor([self.linear_damping_base], device=self.device).expand_as(
+                    noise_linear
+                )
+                + noise_linear
+            )
+            self.quadratic_damping[env_ids] = (
+                torch.tensor(
+                    [self.quadratic_damping_base], device=self.device
+                ).expand_as(noise_quad)
+                + noise_quad
+            )
+        # Debug : print the updated coefficients
+        print("Updated linear damping for reset envs:", self.linear_damping[env_ids])
+        # print("Updated quadratic damping for reset envs:", self.quadratic_damping[env_ids])
+        return
+
     def ComputeDampingMatrix(self, vel):
         """
         // From Antonelli 2014: the viscosity of the fluid causes
@@ -67,7 +137,7 @@ class HydrodynamicsObject:
         // and quadratic damping terms and group these terms in a
         // matrix Drb
         """
-
+        # print("vel: ", vel)
         lin_damp = (
             self.linear_damping
             + self.offset_linear_damping

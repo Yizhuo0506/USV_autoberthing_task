@@ -421,11 +421,11 @@ class USVVirtual(RLTask):
             last_time=self.last_time,
         )
         self.hydrodynamics = HydrodynamicsObject(
+            task_cfg=self._task_cfg["env"]["disturbances"]["drag"],
             num_envs=self.num_envs,
             device=self._device,
             water_density=self.water_density,
             gravity=self.gravity,
-            drag_coefficients=self.squared_drag_coefficients,
             linear_damping=self.linear_damping,
             quadratic_damping=self.quadratic_damping,
             linear_damping_forward_speed=self.linear_damping_forward_speed,
@@ -592,10 +592,10 @@ class USVVirtual(RLTask):
 
         # Adds random noise on the actions
         thrusts = self.AN.add_noise_on_act(thrusts)
-        
-        # Clip the actions 
-        thrusts = torch.clamp(thrusts, -1.0, 1.0) 
-        
+
+        # Clip the actions
+        thrusts = torch.clamp(thrusts, -1.0, 1.0)
+
         # clear actions for reset envs
         thrusts[reset_env_ids] = 0
         # print(self.actions)
@@ -776,6 +776,8 @@ class USVVirtual(RLTask):
         self.TD.generate_torque(env_ids, num_resets)
         self.MDD.randomize_masses(env_ids, num_resets)
         self.MDD.set_masses(self._heron.base, env_ids)
+        # Resets hydrodynamic coefficients
+        self.hydrodynamics.reset_coefficients(env_ids, num_resets)
         # Randomizes the starting position of the platform within a disk around the target
         root_pos, root_rot = self.task.get_spawns(
             env_ids,

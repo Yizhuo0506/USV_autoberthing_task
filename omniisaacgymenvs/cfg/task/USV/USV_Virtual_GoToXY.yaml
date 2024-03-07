@@ -79,6 +79,25 @@ env:
       CoM_max_displacement: 0.0
       base_mass: 35.0
 
+    drag:
+      # Add drag disturbances
+      use_drag_randomization: True
+      # Proportion of drag randomization for each drag coefficient
+      # Linear
+      u_linear_rand: 0.2 # Forward
+      v_linear_rand: 0.2 # Lateral
+      w_linear_rand: 0.0 # Vertical. In 2D, neglectable
+      p_linear_rand: 0.0 # Roll. In 2D, neglectable
+      q_linear_rand: 0.0 # Pitch. In 2D, neglectable
+      r_linear_rand: 0.2 # Yaw
+      # Quadratic
+      u_quad_rand: 0.2 # Forward
+      v_quad_rand: 0.2 # Lateral
+      w_quad_rand: 0.0 # Vertical. In 2D, neglectable
+      p_quad_rand: 0.0 # Roll. In 2D, neglectable
+      q_quad_rand: 0.0 # Pitch. In 2D, neglectable
+      r_quad_rand: 0.2 # Yaw
+      
   task_parameters: 
     name: GoToXY
     position_tolerance: 0.1 # 0.01 default
