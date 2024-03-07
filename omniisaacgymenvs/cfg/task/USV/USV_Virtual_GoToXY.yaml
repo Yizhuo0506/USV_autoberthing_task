@@ -73,7 +73,7 @@ env:
 
     mass:
       # Add mass disturbances
-      add_mass_disturbances: True
+      add_mass_disturbances: False
       min_mass: 34.0
       max_mass: 36.0
       CoM_max_displacement: 0.0

@@ -86,7 +86,8 @@ class MassDistributionDisturbances:
         Args:
             body (omni.isaac.core.XFormPrimView): The rigid bodies.
             idx (torch.Tensor): The ids of the environments to reset."""
-        if self._add_mass_disturbances:
+        # if self._add_mass_disturbances:
+        if True:
             body.set_masses(self.platforms_mass[idx, 0], indices=idx)
 
 
