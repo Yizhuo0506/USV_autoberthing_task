@@ -126,7 +126,9 @@ class HydrodynamicsObject:
             )
         # Debug : print the updated coefficients
         print("Updated linear damping for reset envs:", self.linear_damping[env_ids])
-        # print("Updated quadratic damping for reset envs:", self.quadratic_damping[env_ids])
+        print(
+            "Updated quadratic damping for reset envs:", self.quadratic_damping[env_ids]
+        )
         return
 
     def ComputeDampingMatrix(self, vel):

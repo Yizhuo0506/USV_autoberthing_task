@@ -62,6 +62,11 @@ class MassDistributionDisturbances:
                 * (self._max_mass - self._min_mass)
                 + self._min_mass
             )
+        else:
+            self.platforms_mass[env_ids, 0] = (
+                torch.rand(num_resets, dtype=torch.float32, device=self._device) * 0
+                + self._base_mass
+            )
 
     def get_masses(self) -> Tuple[torch.Tensor, torch.Tensor]:
         """
@@ -139,6 +144,11 @@ class ForceDisturbance:
         Args:
             env_ids (torch.Tensor): The ids of the environments to reset.
             num_resets (int): The number of resets to perform."""
+        if not self._use_force_disturbance:
+            self.disturbance_forces[env_ids, 0] = 0
+            self.disturbance_forces[env_ids, 1] = 0
+            self.disturbance_forces[env_ids, 2] = 0
+            return
 
         if self._use_sinusoidal_force:
             self._force_x_freq[env_ids] = (
@@ -249,6 +259,10 @@ class TorqueDisturbance:
         Args:
             env_ids (torch.Tensor): The ids of the environments to reset.
             num_resets (int): The number of resets to perform."""
+
+        if not self._use_torque_disturbance:
+            self.torque_forces[env_ids, 2] = 0
+            return
 
         if self._use_sinusoidal_torque:
             #  use the same min/max frequencies and offsets for the force

@@ -575,7 +575,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        # self.actions = torch.ones_like(self.actions) * 0.0
+        self.actions = torch.ones_like(self.actions) * 0.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -800,9 +800,11 @@ class USVVirtual(RLTask):
 
         root_velocities[env_ids] = 0
 
-        # debug velocity
-        # root_velocities[env_ids] = [3.0, 0.0, 0.0, 0.0, 0.0, 0.0]
-        # print("root_velocities: ", root_velocities)
+        # Debug : velocity. apply x direction 3m/s for all envs
+        # root_velocities[env_ids] = torch.tensor(
+        #    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0], device=self._device
+        # )
+        print("root_velocities: ", root_velocities)
 
         # apply resets
         self._heron.set_joint_positions(self.dof_pos[env_ids], indices=env_ids)
