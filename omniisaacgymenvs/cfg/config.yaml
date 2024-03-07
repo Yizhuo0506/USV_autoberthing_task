@@ -46,10 +46,10 @@ enable_livestream: False
 mt_timeout: 30
 
 wandb_activate: False
-wandb_group: ''
+wandb_group: 'r3ama'
 wandb_name: ${train.params.config.name}
-wandb_entity: ''
-wandb_project: 'omniisaacgymenvs'
+wandb_entity: 'junghwanro'
+wandb_project: 'USV'
 
 # set default task and default training config based on task
 defaults:

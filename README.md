@@ -1,10 +1,8 @@
-# RANS: Reinforcement Learning Autonomous Navigating Systems
+# Reinforcement Learning Framework for Unmanned Surface Vehicle
 
 ## About this repository
 
-This repo is an extension of the Isaac Gym Envs library present at https://github.com/NVIDIA-Omniverse/OmniIsaacGymEnvs. There, you can find further details and instructions regarding the default tasks (`AllegroHand`, `Ant`, `Anymal`, `AnymalTerrain`, `BallBalance`, `Cartpole`, `Crazyflie`, `FrankaCabinet`, `Humanoid`, `Ingenuity`, `Quadcopter`, `ShadowHand`, `ShadowHandOpenAI_FF`, `ShadowHandOpenAI_LSTM`).
-
-The main additions to the Reinforcement Learning examples provided by Omniverse Isaac Gym are environments related to **Space Robotics**. 
+This repo is developed from RANS(Reinforcement Learning Autonomous Navigating Systems)(https://github.com/elharirymatteo/RANS/tree/main). RANS is an extension of the Isaac Gym Envs library present at https://github.com/NVIDIA-Omniverse/OmniIsaacGymEnvs. 
 
 Firstly, we start by providing a 2D environmnet, which serves as a simpler version of a realistic spacecraft. The modelled 2D system can be tested with a real rigid structure floating on top of an extremely flat and smooth surface using air bearings. This system is a common solution to emulate free-floating and free-flying satellite motion. This intermediate step is especially important for demonstrating the sim-to-real transfer of the DRL policies trained within Omniverse. 
 
@@ -15,6 +13,15 @@ Secondly, we provide a full 3D environment to allow the simulation of free flyin
 | ![3Dof_GoToXY_v2](omniisaacgymenvs/demos/3Dof_GoToXY_v2.gif) | ![3Dof_GoToPose_v2](omniisaacgymenvs/demos/3Dof_GoToPose_v2.gif) | ![6Dof_GoToXYZ_v8](omniisaacgymenvs/demos/6Dof_GoToXYZ_v8.gif) |
 
 ---
+
+## How to run
+1. **Training**
+  PYTHON_PATH scripts/rlgames_train.py task=buoyancy/Buoyancy_GoToPose train=buoyancy/Buoyancy_PPOcontinuous_MLP headless=True num_envs=4096 enable_livestream=True
+
+2. **Test**
+
+
+
 ## Task Description
 
 Currently we provide two primary environments, each tailored to simulate distinct robotic systems:

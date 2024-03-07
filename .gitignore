@@ -2,6 +2,7 @@ __pycache___
 __pycache__/
 runs
 models
+rl_games/
 omniisaacgymenvs.egg-info/
 checkpoints
 omniisaacgymenvs/wandb
@@ -16,4 +17,5 @@ lab_tests
 !eval_multi_models.ipynb
 !icra24_results.ipynb
 !icra24_RT_plots.ipynb
-
+*.etli
+*.bag
