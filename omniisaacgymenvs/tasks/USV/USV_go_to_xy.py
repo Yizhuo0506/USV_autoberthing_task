@@ -53,15 +53,8 @@ class GoToXYTask(Core):
         )
         self._task_label = self._task_label * 0
 
-        # Initialize prev_position_dist with zeros
-        self.prev_position_dist = torch.zeros(
-            (self._num_envs), device=self._device, dtype=torch.float32
-        )
-
-        # Initialize prev_heading_error with zeros
-        self.prev_heading_error = torch.zeros(
-            (self._num_envs), device=self._device, dtype=torch.float32
-        )
+        # Initialize prev_position_dist with None
+        self.prev_position_dist = None
 
     def create_stats(self, stats: dict) -> dict:
         """
@@ -71,8 +64,10 @@ class GoToXYTask(Core):
             self._num_envs, dtype=torch.float, device=self._device, requires_grad=False
         )
 
-        if not "position_reward" in stats.keys():
-            stats["position_reward"] = torch_zeros()
+        if not "distance_reward" in stats.keys():
+            stats["distance_reward"] = torch_zeros()
+        if not "alignment_reward" in stats.keys():
+            stats["alignment_reward"] = torch_zeros()
         if not "position_error" in stats.keys():
             stats["position_error"] = torch_zeros()
         if not "boundary_penalty" in stats.keys():
@@ -129,14 +124,18 @@ class GoToXYTask(Core):
         self._goal_reached *= goal_is_reached  # if not set the value to 0
         self._goal_reached += goal_is_reached  # if it is add 1
 
+        # If prev_position_dist is None, set it to position_dist
+        if self.prev_position_dist is None:
+            self.prev_position_dist = self.position_dist
+
         # Rewards
-        self.position_reward = self._reward_parameters.compute_reward(
-            current_state,
-            actions,
-            self.position_dist,
-            self.prev_position_dist,
-            self.heading_error,
-            self.prev_heading_error,
+        self.distance_reward, self.alignment_reward = (
+            self._reward_parameters.compute_reward(
+                current_state,
+                actions,
+                self.position_dist,
+                self.heading_error,
+            )
         )
 
         # Add reward for reaching the goal
@@ -144,9 +143,13 @@ class GoToXYTask(Core):
 
         # Save position_dist for next calculation, as prev_position_dist
         self.prev_position_dist = self.position_dist
-        self.prev_heading_error = self.heading_error
 
-        return self.position_reward + goal_reward + self._task_parameters.time_reward
+        return (
+            self.distance_reward
+            + self.alignment_reward
+            + goal_reward
+            + self._task_parameters.time_reward
+        )
 
     def update_kills(self, step) -> torch.Tensor:
         """
@@ -190,7 +193,8 @@ class GoToXYTask(Core):
         """
         Updates the training statistics."""
 
-        stats["position_reward"] += self.position_reward
+        stats["distance_reward"] += self.distance_reward
+        stats["alignment_reward"] += self.alignment_reward
         stats["position_error"] += self.position_dist
         stats["boundary_penalty"] += self.boundary_penalty
         stats["boundary_dist"] += self.boundary_dist

@@ -79,7 +79,8 @@ class HydrodynamicsObject:
             self.quadratic_damping += (
                 torch.rand_like(self.quadratic_damping) * 2 - 1
             ) * self._quad_rand
-        print("linear_damping: ", self.linear_damping)
+        # Debug : print the initialized coefficients
+        # print("linear_damping: ", self.linear_damping)
 
         # coriolis
         self._Ca = torch.zeros([6, 6], device=self.device)

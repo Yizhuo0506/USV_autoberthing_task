@@ -19,10 +19,13 @@ class GoToXYReward:
     """ "
     Reward function and parameters for the GoToXY task."""
 
+    prev_position_error = None
     reward_mode: str = "exponential"
     position_scale: float = 1.0
-    heading_scale: float = 1.0
     exponential_reward_coeff: float = 0.25
+    # r_align = La1 * exp(La2 * heading_error**4)
+    align_la1: float = 0.02
+    align_la2: float = -10.0
 
     def __post_init__(self) -> None:
         """
@@ -39,32 +42,37 @@ class GoToXYReward:
         current_state: torch.Tensor,
         actions: torch.Tensor,
         position_error: torch.Tensor,
-        prev_position_error: torch.Tensor,
         heading_error: torch.Tensor,
-        prev_heading_error: torch.Tensor,
     ) -> torch.Tensor:
         """
         Defines the function used to compute the reward for the GoToXY task."""
+        if self.prev_position_error is None:
+            self.prev_position_error = position_error
 
         if self.reward_mode.lower() == "linear":
-            position_reward = self.position_scale * (
-                prev_position_error - position_error
-            ) + self.heading_scale * (prev_heading_error - heading_error)
+            distance_reward = self.position_scale * (
+                self.prev_position_error - position_error
+            )
         elif self.reward_mode.lower() == "square":
-            position_reward = self.position_scale * (
-                prev_position_error.pow(2) - position_error.pow(2)
-            ) + self.heading_scale * (prev_heading_error.pow(2) - heading_error.pow(2))
+            distance_reward = self.position_scale * (
+                self.prev_position_error.pow(2) - position_error.pow(2)
+            )
         elif self.reward_mode.lower() == "exponential":
-            position_reward = self.position_scale * (
+            distance_reward = self.position_scale * (
                 torch.exp(-position_error / self.exponential_reward_coeff)
-                - torch.exp(-prev_position_error / self.exponential_reward_coeff)
-            ) + self.heading_scale * (
-                torch.exp(-heading_error / self.exponential_reward_coeff)
-                - torch.exp(-prev_heading_error / self.exponential_reward_coeff)
+                - torch.exp(-self.prev_position_error / self.exponential_reward_coeff)
             )
         else:
             raise ValueError("Unknown reward type.")
-        return position_reward
+
+        alignment_reward = self.align_la1 * (
+            -1 + torch.exp(self.align_la2 * heading_error.pow(4))
+        )
+
+        # Update previous position error
+        self.prev_position_error = position_error
+
+        return distance_reward, alignment_reward
 
 
 @dataclass
@@ -299,6 +307,9 @@ class Penalties:
     """
     Metaclass to compute penalties for the tasks."""
 
+    prev_state = None
+    prev_actions = None
+
     penalize_linear_velocities: bool = False
     penalize_linear_velocities_fn: str = (
         "lambda x,step : -torch.norm(x, dim=-1)*c1 + c2"
@@ -309,23 +320,46 @@ class Penalties:
     penalize_angular_velocities_fn: str = "lambda x,step : -torch.abs(x)*c1 + c2"
     penalize_angular_velocities_c1: float = 0.01
     penalize_angular_velocities_c2: float = 0.0
+    penalize_angular_velocities_variation: bool = False
+    penalize_angular_velocities_variation_fn: str = (
+        "lambda x,step: torch.exp(c1 * torch.abs(x)) - 1.0"
+    )
+    penalize_angular_velocities_variation_c1: float = -0.033
     penalize_energy: bool = False
     penalize_energy_fn: str = "lambda x,step : -torch.abs(x)*c1 + c2"
     penalize_energy_c1: float = 0.01
     penalize_energy_c2: float = 0.0
+    penalize_action_variation: bool = False
+    penalize_action_variation_fn: str = (
+        "lambda x,step: torch.exp(c1 * torch.abs(x)) - 1.0"
+    )
+    penalize_action_variation_c1: float = -0.033
 
     def __post_init__(self):
         """
         Converts the string functions into python callable functions."""
         self.penalize_linear_velocities_fn = eval(self.penalize_linear_velocities_fn)
         self.penalize_angular_velocities_fn = eval(self.penalize_angular_velocities_fn)
+        self.penalize_angular_velocities_variation_fn = eval(
+            self.penalize_angular_velocities_variation_fn
+        )
         self.penalize_energy_fn = eval(self.penalize_energy_fn)
+        self.penalize_action_variation_fn = eval(self.penalize_action_variation_fn)
 
     def compute_penalty(
-        self, state: torch.Tensor, actions: torch.Tensor, step: int
+        self,
+        state: torch.Tensor,
+        actions: torch.Tensor,
+        step: int,
     ) -> torch.Tensor:
         """
         Computes the penalties for the task."""
+
+        # Initialize previous state and action
+        if self.prev_state is None:
+            self.prev_state = state
+        if self.prev_actions is None:
+            self.prev_actions = actions
 
         # Linear velocity penalty
         if self.penalize_linear_velocities:
@@ -347,6 +381,18 @@ class Penalties:
             self.angular_vel_penalty = torch.zeros(
                 [actions.shape[0]], dtype=torch.float32, device=actions.device
             )
+        # Angular velocity variation penalty
+        if self.penalize_angular_velocities_variation:
+            self.angular_vel_variation_penalty = (
+                self.penalize_angular_velocities_variation_fn(
+                    state["angular_velocity"] - self.prev_state["angular_velocity"],
+                    torch.tensor(step, dtype=torch.float32, device=actions.device),
+                )
+            )
+        else:
+            self.angular_vel_variation_penalty = torch.zeros(
+                [actions.shape[0]], dtype=torch.float32, device=actions.device
+            )
         # Energy penalty
         if self.penalize_energy:
             self.energy_penalty = self.penalize_energy_fn(
@@ -357,13 +403,33 @@ class Penalties:
             self.energy_penalty = torch.zeros(
                 [actions.shape[0]], dtype=torch.float32, device=actions.device
             )
+        # Action variation penalty
+        if self.penalize_action_variation:
+            self.action_variation_penalty = self.penalize_action_variation_fn(
+                torch.sum(actions, dim=-1) - torch.sum(self.prev_actions, dim=-1),
+                torch.tensor(step, dtype=torch.float32, device=actions.device),
+            )
+        else:
+            self.action_variation_penalty = torch.zeros(
+                [actions.shape[0]], dtype=torch.float32, device=actions.device
+            )
 
         # print penalties
         # print("linear_vel_penalty: ", self.linear_vel_penalty)
         # print("angular_vel_penalty: ", self.angular_vel_penalty)
         # print("energy_penalty: ", self.energy_penalty)
 
-        return self.linear_vel_penalty + self.angular_vel_penalty + self.energy_penalty
+        # Update previous state and action
+        self.prev_state = state
+        self.prev_actions = actions
+
+        return (
+            self.linear_vel_penalty
+            + self.angular_vel_penalty
+            + self.angular_vel_variation_penalty
+            + self.energy_penalty
+            + self.action_variation_penalty
+        )
 
     def get_stats_name(self) -> list:
         """
@@ -374,8 +440,12 @@ class Penalties:
             names.append("linear_vel_penalty")
         if self.penalize_angular_velocities:
             names.append("angular_vel_penalty")
+        if self.penalize_angular_velocities_variation:
+            names.append("angular_vel_variation_penalty")
         if self.penalize_energy:
             names.append("energy_penalty")
+        if self.penalize_action_variation:
+            names.append("action_variation_penalty")
         return names
 
     def update_statistics(self, stats: dict) -> dict:
@@ -386,6 +456,10 @@ class Penalties:
             stats["linear_vel_penalty"] += self.linear_vel_penalty
         if self.penalize_angular_velocities:
             stats["angular_vel_penalty"] += self.angular_vel_penalty
+        if self.penalize_angular_velocities_variation:
+            stats["angular_vel_variation_penalty"] += self.angular_vel_variation_penalty
         if self.penalize_energy:
             stats["energy_penalty"] += self.energy_penalty
+        if self.penalize_action_variation:
+            stats["action_variation_penalty"] += self.action_variation_penalty
         return stats

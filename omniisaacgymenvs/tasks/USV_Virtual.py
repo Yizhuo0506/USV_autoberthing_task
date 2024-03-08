@@ -845,6 +845,7 @@ class USVVirtual(RLTask):
 
         overall_reward = self.task.compute_reward(self.current_state, self.actions)
         self.step += 1 / self._task_cfg["env"]["horizon_length"]
+
         penalties = self._penalties.compute_penalty(
             self.current_state, self.actions, self.step
         )
