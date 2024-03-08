@@ -439,6 +439,7 @@ class USVVirtual(RLTask):
             last_time=self.last_time,
         )
         self.thrusters_dynamics = DynamicsFirstOrder(
+            task_cfg=self._task_cfg["env"]["disturbances"]["thruster"],
             num_envs=self.num_envs,
             device=self._device,
             timeConstant=self.timeConstant,
@@ -575,7 +576,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        self.actions = torch.ones_like(self.actions) * 0.0
+        self.actions = torch.ones_like(self.actions) * 1.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -664,7 +665,7 @@ class USVVirtual(RLTask):
         # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)
         # print drag = self.drag
         # print ("drag: ", self.drag)
-
+        # print("thrusts: ", self.thrusters)
         self._heron.thruster_left.apply_forces_and_torques_at_pos(
             forces=self.thrusters[:, :3], is_global=False
         )
@@ -778,6 +779,8 @@ class USVVirtual(RLTask):
         self.MDD.set_masses(self._heron.base, env_ids)
         # Resets hydrodynamic coefficients
         self.hydrodynamics.reset_coefficients(env_ids, num_resets)
+        # Resets thruster randomization
+        self.thrusters_dynamics.reset_thruster_randomization(env_ids, num_resets)
         # Randomizes the starting position of the platform within a disk around the target
         root_pos, root_rot = self.task.get_spawns(
             env_ids,

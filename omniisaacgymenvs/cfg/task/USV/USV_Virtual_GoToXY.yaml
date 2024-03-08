@@ -103,6 +103,12 @@ env:
       p_quad_rand: 0.0 # Roll. In 2D, neglectable
       q_quad_rand: 0.0 # Pitch. In 2D, neglectable
       r_quad_rand: 0.1 # Yaw
+    
+    thruster:
+      # Add thruster disturbances
+      use_thruster_randomization: True
+      left_rand: 1.6 # If it is 0.2 it means 0.8 to 1.2
+      right_rand: 1.6 # If it is 0.2 it means 0.8 to 1.2
 
   task_parameters: 
     name: GoToXY
