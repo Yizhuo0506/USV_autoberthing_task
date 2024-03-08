@@ -36,24 +36,28 @@ env:
       use_force_disturbance: True
       use_constant_force: True
       use_sinusoidal_force: True
+      force_const_min: 0.0 
+      force_const_max: 2.5
+      force_sin_min: 0.0
+      force_sin_max: 2.5
       force_min_freq: 0.25
-      force_max_freq: 3
-      force_min_offset: 1.0
-      force_max_offset: 0.0
-      max_force: 3.0 # N
-      min_force: 0.0 # N
+      force_max_freq: 3.0
+      force_min_shift: 0.0
+      force_max_shift: 3.0
 
     torques:
       # Torque disturbance generation
       use_torque_disturbance: True
       use_constant_torque: True
       use_sinusoidal_torque: True
+      torque_const_min: 0.0
+      torque_const_max: 1.0
+      torque_sin_min: 0.0
+      torque_sin_max: 1.0
       torque_min_freq: 0.25
       torque_max_freq: 3
-      torque_min_offset: 0.0
-      torque_max_offset: 0.0
-      max_torque: 0.3 # Nm 
-      min_torque: 0.0
+      torque_min_shift: 0.0
+      torque_max_shift: 3.0
 
     observations:
       # Add noisy observations
