@@ -18,7 +18,7 @@ env:
 
   controlFrequencyInv: 5
 
-  clipObservations: {state: 8.0}
+  clipObservations: {state: 12.0}
   clipActions: 1.0
 
   # Split the maximum amount of thrust across all thrusters.
@@ -35,7 +35,7 @@ env:
     forces:
       use_force_disturbance: True
       use_constant_force: True
-      use_sinusoidal_force: True
+      use_sinusoidal_force: False
       force_const_min: 0.0 
       force_const_max: 2.5
       force_sin_min: 0.0
@@ -49,7 +49,7 @@ env:
       # Torque disturbance generation
       use_torque_disturbance: True
       use_constant_torque: True
-      use_sinusoidal_torque: True
+      use_sinusoidal_torque: False
       torque_const_min: 0.0
       torque_const_max: 1.0
       torque_sin_min: 0.0
@@ -131,7 +131,7 @@ env:
 
   penalties_parameters:
     penalize_energy: True
-    penalize_energy_fn: "lambda x,step : torch.exp(-torch.sum(x**2, dim=-1)) * 0.01" # 0.01 default
+    penalize_energy_fn: "lambda x,step : (torch.exp(-torch.sum(x**2, dim=-1)) - 1.0) * 0.01" # 0.01 default
     penalize_energy_c1: 0.01 # 0.01 default
     penalize_energy_c2: 0.00
     penalize_linear_velocities: False
@@ -252,12 +252,14 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [0, 47.39328132, 100, 13, 13, 0.82985084]
+    linear_damping: [0, 100.0, 100, 13, 13, 0.82985084]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
-    quadratic_damping: [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
+    # SID BigSway [0, 100.0, 100, 13, 13, 0.82985084]
+    quadratic_damping: [17.257603, 100.0, 10, 5, 5, 17.33600724]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
+    # SID BigSway [17.257603, 100.0, 10, 5, 5, 17.33600724]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0

@@ -18,7 +18,7 @@ env:
 
   controlFrequencyInv: 5
 
-  clipObservations: {state: 8.0}
+  clipObservations: {state: 12.0}
   clipActions: 1.0
 
   # Split the maximum amount of thrust across all thrusters.
@@ -43,7 +43,7 @@ env:
       force_min_freq: 0.25
       force_max_freq: 3.0
       force_min_shift: 0.0
-      force_max_shift: 3.0
+      force_max_shift: 100.0
 
     torques:
       # Torque disturbance generation
@@ -57,7 +57,7 @@ env:
       torque_min_freq: 0.25
       torque_max_freq: 3
       torque_min_shift: 0.0
-      torque_max_shift: 3.0
+      torque_max_shift: 100.0
 
     observations:
       # Add noisy observations
@@ -131,7 +131,7 @@ env:
 
   penalties_parameters:
     penalize_energy: True
-    penalize_energy_fn: "lambda x,step : torch.exp(-torch.sum(x**2, dim=-1)) * 0.01" # 0.01 default
+    penalize_energy_fn: "lambda x,step : (torch.exp(-torch.sum(x**2, dim=-1)) - 1.0) * 0.01" # 0.01 default
     penalize_energy_c1: 0.01 # 0.01 default
     penalize_energy_c2: 0.00
     penalize_linear_velocities: False
@@ -252,12 +252,14 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [0, 47.39328132, 100, 13, 13, 0.82985084]
+    linear_damping: [0, 100.0, 100, 13, 13, 0.82985084]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
-    quadratic_damping: [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
+    # SID BigSway [0, 100.0, 100, 13, 13, 0.82985084]
+    quadratic_damping: [17.257603, 100.0, 10, 5, 5, 17.33600724]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
+    # SID BigSway [17.257603, 100.0, 10, 5, 5, 17.33600724]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0

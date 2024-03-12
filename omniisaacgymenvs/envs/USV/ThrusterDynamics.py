@@ -55,19 +55,31 @@ class DynamicsFirstOrder(Dynamics):
 
         # thruster randomization
         self._use_thruster_randomization = task_cfg["use_thruster_randomization"]
+        self._thruster_rand = task_cfg["thruster_rand"]
+        self._use_separate_randomization = task_cfg["use_separate_randomization"]
         self._left_rand = task_cfg["left_rand"]
         self._right_rand = task_cfg["right_rand"]
+        self.thruster_multiplier = torch.ones(
+            (self.num_envs, 1), dtype=torch.float32, device=self.device
+        )
         self.thruster_left_multiplier = torch.ones(
             (self.num_envs, 1), dtype=torch.float32, device=self.device
         )
+        self.thruster_right_multiplier = torch.ones(
+            (self.num_envs, 1), dtype=torch.float32, device=self.device
+        )
         if self._use_thruster_randomization:
-            self.thruster_left_multiplier = torch.rand(
-                (self.num_envs, 1), dtype=torch.float32, device=self.device
-            ) * self._left_rand + (1 - self._left_rand / 2)
-            self.thruster_right_multiplier = torch.rand(
-                (self.num_envs, 1), dtype=torch.float32, device=self.device
-            ) * self._right_rand + (1 - self._right_rand / 2)
-
+            if self._use_separate_randomization:
+                self.thruster_left_multiplier = torch.rand(
+                    (self.num_envs, 1), dtype=torch.float32, device=self.device
+                ) * 2 * self._left_rand + (1 - self._left_rand)
+                self.thruster_right_multiplier = torch.rand(
+                    (self.num_envs, 1), dtype=torch.float32, device=self.device
+                ) * 2 * self._right_rand + (1 - self._right_rand)
+            else:
+                self.thruster_multiplier = torch.rand(
+                    (self.num_envs, 1), dtype=torch.float32, device=self.device
+                ) * 2 * self._thruster_rand + (1 - self._thruster_rand)
         # interpolate
         self.commands = torch.linspace(
             cmd_lower_range,
@@ -101,12 +113,17 @@ class DynamicsFirstOrder(Dynamics):
         self, env_ids: torch.Tensor, num_resets: int
     ) -> None:
         if self._use_thruster_randomization:
-            self.thruster_left_multiplier[env_ids] = torch.rand(
-                (num_resets, 1), dtype=torch.float32, device=self.device
-            ) * self._left_rand + (1 - self._left_rand / 2)
-            self.thruster_right_multiplier[env_ids] = torch.rand(
-                (num_resets, 1), dtype=torch.float32, device=self.device
-            ) * self._right_rand + (1 - self._right_rand / 2)
+            if self._use_separate_randomization:
+                self.thruster_left_multiplier[env_ids] = torch.rand(
+                    (num_resets, 1), dtype=torch.float32, device=self.device
+                ) * 2 * self._left_rand + (1 - self._left_rand)
+                self.thruster_right_multiplier[env_ids] = torch.rand(
+                    (num_resets, 1), dtype=torch.float32, device=self.device
+                ) * 2 * self._right_rand + (1 - self._right_rand)
+            else:
+                self.thruster_multiplier[env_ids] = torch.rand(
+                    (num_resets, 1), dtype=torch.float32, device=self.device
+                ) * 2 * self._thruster_rand + (1 - self._thruster_rand)
         return
 
     def update(self, thruster_forces_before_dynamics, dt):
@@ -178,14 +195,20 @@ class DynamicsFirstOrder(Dynamics):
         ]
 
         # Applying thruster randomization
-        self.thruster_forces_after_randomization[:, 0] = (
-            self.thruster_forces_before_dynamics[:, 0]
-            * self.thruster_left_multiplier.squeeze()
-        )
-        self.thruster_forces_after_randomization[:, 1] = (
-            self.thruster_forces_before_dynamics[:, 1]
-            * self.thruster_right_multiplier.squeeze()
-        )
+        if self._use_thruster_randomization:
+            if self._use_separate_randomization:
+                self.thruster_forces_after_randomization[:, 0] = (
+                    self.thruster_forces_before_dynamics[:, 0]
+                    * self.thruster_left_multiplier.squeeze()
+                )
+                self.thruster_forces_after_randomization[:, 1] = (
+                    self.thruster_forces_before_dynamics[:, 1]
+                    * self.thruster_right_multiplier.squeeze()
+                )
+            else:
+                self.thruster_forces_after_randomization = (
+                    self.thruster_forces_before_dynamics * self.thruster_multiplier
+                )
 
     def set_target_force(self, commands):
         """this function get commands as entry and provide resulting forces"""
@@ -195,9 +218,14 @@ class DynamicsFirstOrder(Dynamics):
 
     def update_forces(self):
         # size (num_envs,2)
-        self.thrusters[:, [0, 3]] = self.update(
-            self.thruster_forces_after_randomization, self.dt
-        )  # every simulation step that tracks the target  update_thrusters_forces
+        if self._use_thruster_randomization:
+            self.thrusters[:, [0, 3]] = self.update(
+                self.thruster_forces_after_randomization, self.dt
+            )  # every simulation step that tracks the target  update_thrusters_forces
+        else:
+            self.thrusters[:, [0, 3]] = self.update(
+                self.thruster_forces_before_dynamics, self.dt
+            )
 
         # Debug: print(self.thrusters[:,[0,3]])
         # print(f"thrusters: {self.thrusters[:,[0,3]]}")

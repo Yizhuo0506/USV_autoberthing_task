@@ -576,7 +576,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        self.actions = torch.ones_like(self.actions) * 1.0
+        # self.actions = torch.ones_like(self.actions) * 1.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":

@@ -326,7 +326,7 @@ class Penalties:
     )
     penalize_angular_velocities_variation_c1: float = -0.033
     penalize_energy: bool = False
-    penalize_energy_fn: str = "lambda x,step : -torch.abs(x)*c1 + c2"
+    penalize_energy_fn: str = "lambda x,step : -torch.sum(x**2)*c1 + c2"
     penalize_energy_c1: float = 0.01
     penalize_energy_c2: float = 0.0
     penalize_action_variation: bool = False
@@ -396,7 +396,7 @@ class Penalties:
         # Energy penalty
         if self.penalize_energy:
             self.energy_penalty = self.penalize_energy_fn(
-                torch.sum(actions, -1),
+                actions,
                 torch.tensor(step, dtype=torch.float32, device=actions.device),
             )
         else:
