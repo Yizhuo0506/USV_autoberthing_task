@@ -33,7 +33,7 @@ env:
   disturbances:
     # Uneven floor generation
     forces:
-      use_force_disturbance: True
+      use_force_disturbance: False
       use_constant_force: True
       use_sinusoidal_force: True
       force_const_min: 0.0 
@@ -47,7 +47,7 @@ env:
 
     torques:
       # Torque disturbance generation
-      use_torque_disturbance: True
+      use_torque_disturbance: False
       use_constant_torque: True
       use_sinusoidal_torque: True
       torque_const_min: 0.0
@@ -107,11 +107,11 @@ env:
     
     thruster:
       # Add thruster disturbances
-      use_thruster_randomization: False
-      thruster_rand: 0.0 # If it is 0.2 it means 0.8 to 1.2
+      use_thruster_randomization: True
+      thruster_rand: 0.1 # If it is 0.2 it means 0.8 to 1.2
       use_separate_randomization: False
-      left_rand: 0.0 # If it is 0.2 it means 0.8 to 1.2
-      right_rand: 0.0 # If it is 0.2 it means 0.8 to 1.2
+      left_rand: 0.1 # If it is 0.2 it means 0.8 to 1.2
+      right_rand: 0.1 # If it is 0.2 it means 0.8 to 1.2
 
   task_parameters: 
     name: GoToXY
@@ -255,11 +255,11 @@ dynamics:
     linear_damping: [0.0, 100.0, 100.0, 13.0, 13.0, 0.82985084]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
-    # SID BigSway [0, 100.0, 100, 13, 13, 0.82985084]
+    # SID BigSway [0.0, 100.0, 100.0, 13.0, 13.0, 0.82985084]
     quadratic_damping: [17.257603, 100.0, 10.0, 5.0, 5.0, 17.33600724]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
-    # SID BigSway [17.257603, 100.0, 10, 5, 5, 17.33600724]
+    # SID BigSway [17.257603, 100.0, 10.0, 5.0, 5.0, 17.33600724]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0

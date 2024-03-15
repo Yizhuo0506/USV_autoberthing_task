@@ -576,7 +576,7 @@ class USVVirtual(RLTask):
         self.actions = actions
 
         # Debug : Set actions
-        # self.actions = torch.ones_like(self.actions) * 1.0
+        # self.actions = torch.ones_like(self.actions) * 0.0
 
         # Remap actions to the correct values
         if self._discrete_actions == "MultiDiscrete":
@@ -802,6 +802,13 @@ class USVVirtual(RLTask):
         root_velocities = self.root_velocities.clone()
 
         root_velocities[env_ids] = 0
+        # set root_velocities x, y direction randomly between -1.5m/s to +1.5m/s (in global)
+        root_velocities[env_ids, 0] = (
+            torch.rand(num_resets, device=self._device) * 3 - 1.5
+        )
+        root_velocities[env_ids, 1] = (
+            torch.rand(num_resets, device=self._device) * 3 - 1.5
+        )
 
         # Debug : velocity. apply x direction 3m/s for all envs
         # root_velocities[env_ids] = torch.tensor(

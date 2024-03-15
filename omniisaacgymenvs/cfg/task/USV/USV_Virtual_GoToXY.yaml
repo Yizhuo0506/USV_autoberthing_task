@@ -7,8 +7,8 @@ experiment: USV_Virtual_GoToXY
 # if given, will override the device setting in gym. 
 env:
   numEnvs: ${resolve_default:1024,${...num_envs}}
-  envSpacing: 12
-  maxEpisodeLength: 300
+  envSpacing: 5 # default: 12
+  maxEpisodeLength: 3000
   enableDebugVis: False
   action_mode: Continuous
   numQuantizedActions: 1
@@ -180,7 +180,7 @@ sim:
   dt: 0.02
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
-  add_ground_plane: True
+  add_ground_plane: False
   add_distant_light: True
   use_flatcache: True
   enable_scene_query_support: False

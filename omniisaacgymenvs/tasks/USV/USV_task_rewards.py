@@ -26,6 +26,7 @@ class GoToXYReward:
     # r_align = La1 * exp(La2 * heading_error**4)
     align_la1: float = 0.02
     align_la2: float = -10.0
+    align_la3: float = -0.1
 
     def __post_init__(self) -> None:
         """
@@ -66,7 +67,8 @@ class GoToXYReward:
             raise ValueError("Unknown reward type.")
 
         alignment_reward = self.align_la1 * (
-            -1 + torch.exp(self.align_la2 * heading_error.pow(4))
+            torch.exp(self.align_la2 * heading_error.pow(4))
+            + torch.exp(self.align_la3 * heading_error.pow(2))
         )
 
         # Update previous position error

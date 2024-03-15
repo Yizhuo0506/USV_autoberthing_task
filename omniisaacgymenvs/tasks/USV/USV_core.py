@@ -73,6 +73,9 @@ class Core:
             self._obs_buffer[:, 2] = current_state["angular_velocity"]
             self._obs_buffer[:, 3:8] = self._task_data
 
+            # Debug: print the sway velocity
+            # print(f"sway velocity: {self._obs_buffer[:, 1]}")
+
             """
             # Position error in local frame
             self._obs_buffer[:, 3] = (

@@ -52,6 +52,9 @@ class GoToXYTask(Core):
             (self._num_envs, 2), device=self._device, dtype=torch.float32
         )
         self._task_label = self._task_label * 0
+        self.just_had_been_reset = torch.range(
+            0, num_envs - 1, device=self._device, dtype=torch.long
+        )
 
         # Initialize prev_position_dist with None
         self.prev_position_dist = None
@@ -123,6 +126,8 @@ class GoToXYTask(Core):
         ).int()
         self._goal_reached *= goal_is_reached  # if not set the value to 0
         self._goal_reached += goal_is_reached  # if it is add 1
+        # print out how many goals reached
+        # print(f"goal_is_reached: {torch.sum(goal_is_reached)}")
 
         # If prev_position_dist is None, set it to position_dist
         if self.prev_position_dist is None:
@@ -138,11 +143,19 @@ class GoToXYTask(Core):
             )
         )
 
+        self.distance_reward[self.just_had_been_reset] = 0
+        self.just_had_been_reset = torch.tensor(
+            [], device=self._device, dtype=torch.long
+        )
+
         # Add reward for reaching the goal
         goal_reward = (self._goal_reached * self._task_parameters.goal_reward).float()
 
         # Save position_dist for next calculation, as prev_position_dist
         self.prev_position_dist = self.position_dist
+
+        # print(f"distance_reward", self.distance_reward)
+        # print(f"alignment_reward", self.alignment_reward)
 
         return (
             self.distance_reward
@@ -205,6 +218,7 @@ class GoToXYTask(Core):
         Resets the goal_reached_flag when an agent manages to solve its task."""
 
         self._goal_reached[env_ids] = 0
+        self.just_had_been_reset = env_ids.clone()
 
     def get_goals(
         self,
