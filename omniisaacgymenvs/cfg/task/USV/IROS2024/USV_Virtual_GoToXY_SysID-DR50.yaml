@@ -108,10 +108,10 @@ env:
     thruster:
       # Add thruster disturbances
       use_thruster_randomization: True
-      thruster_rand: 0.1 # If it is 0.2 it means 0.8 to 1.2
+      thruster_rand: 0.5 # If it is 0.2 it means 0.8 to 1.2
       use_separate_randomization: False
-      left_rand: 0.1 # If it is 0.2 it means 0.8 to 1.2
-      right_rand: 0.1 # If it is 0.2 it means 0.8 to 1.2
+      left_rand: 0.5 # If it is 0.2 it means 0.8 to 1.2
+      right_rand: 0.5 # If it is 0.2 it means 0.8 to 1.2
 
   task_parameters: 
     name: GoToXY
@@ -180,7 +180,7 @@ sim:
   dt: 0.02
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
-  add_ground_plane: True
+  add_ground_plane: False
   add_distant_light: True
   use_flatcache: True
   enable_scene_query_support: False
@@ -238,10 +238,10 @@ dynamics:
     interpolation: 
       numberOfPointsForInterpolation: 1000
       #                                     -1.0, -0.9, -0.8, -0.7, -0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6,  0.7,  0.8,  0.9,  1.0]
-      interpolationPointsFromRealDataLeft: [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
+      interpolationPointsFromRealDataLeft: [-3.8, -3.8, -3.6, -3.6, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 10.0, 15.0, 21.0, 23.0, 22.0]
       # Measured Thruster Model : [-3.8, -3.8, -3.6, -3.6, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 10.0, 15.0, 21.0, 23.0, 22.0]
       # UUV Thruster Model : [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
-      interpolationPointsFromRealDataRight: [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
+      interpolationPointsFromRealDataRight: [-5.0, -5.0, -5.0, -4.6, -2.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.6, 10.0, 17.0, 24.0, 24.0, 23.0]
       # Measured Thruster Model : [-5.0, -5.0, -5.0, -4.6, -2.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.6, 10.0, 17.0, 24.0, 24.0, 23.0]
       # UUV Thruster Model : [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
       # Previous Measurement [-5.05215, -5.0031, -4.26735, -2.20725, -1.6677, -0.73575, -0.4905, -0.14715, -0.0981, 0.0, 0.0, 0.0, 0.14715, 0.2943, 1.0791, 5.1993, 9.17235, 10.791, 15.8922, 22.3668, 22.563]
@@ -252,14 +252,14 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [16.44998712, 15.79776044, 100.0, 13.0, 13.0, 6.0]
+    linear_damping: [0.0, 100.0, 100.0, 13.0, 13.0, 0.82985084]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
-    # SID BigSway [0, 100.0, 100, 13, 13, 0.82985084]
-    quadratic_damping: [2.942, 2.7617212, 10.0, 5.0, 5.0, 5.0]
+    # SID BigSway [0.0, 100.0, 100.0, 13.0, 13.0, 0.82985084]
+    quadratic_damping: [17.257603, 100.0, 10.0, 5.0, 5.0, 17.33600724]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
-    # SID BigSway [17.257603, 100.0, 10, 5, 5, 17.33600724]
+    # SID BigSway [17.257603, 100.0, 10.0, 5.0, 5.0, 17.33600724]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0

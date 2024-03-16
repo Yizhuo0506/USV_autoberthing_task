@@ -8,7 +8,7 @@ experiment: USV_Virtual_GoToXY
 env:
   numEnvs: ${resolve_default:1024,${...num_envs}}
   envSpacing: 12
-  maxEpisodeLength: 300
+  maxEpisodeLength: 3000
   enableDebugVis: False
   action_mode: Continuous
   numQuantizedActions: 1
@@ -43,7 +43,7 @@ env:
       force_min_freq: 0.25
       force_max_freq: 3.0
       force_min_shift: 0.0
-      force_max_shift: 3.0
+      force_max_shift: 100.0
 
     torques:
       # Torque disturbance generation
@@ -57,7 +57,7 @@ env:
       torque_min_freq: 0.25
       torque_max_freq: 3
       torque_min_shift: 0.0
-      torque_max_shift: 3.0
+      torque_max_shift: 100.0
 
     observations:
       # Add noisy observations
@@ -121,8 +121,8 @@ env:
     min_spawn_dist: 0.3
     kill_dist: 20.0
     boundary_cost: 25.0
-    goal_reward: 0.0 # if not used, set to 0.0
-    time_reward: -0.1 # if not used, set to -0.0
+    goal_reward: 30.0 # if not used, set to 0.0
+    time_reward: -0.2 # if not used, set to -0.0
 
   reward_parameters:
     name: GoToXY
@@ -143,8 +143,8 @@ env:
     penalize_angular_velocities_c1: 0.01
     penalize_angular_velocities_c2: 0.00
     penalize_angular_velocities_variation: True
-    penalize_angular_velocities_variation_fn: "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 0.01"
-    penalize_action_variation: True
+    penalize_angular_velocities_variation_fn: "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 1.0"
+    penalize_action_variation: False
     penalize_action_variation_fn: "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 0.01"
 
   platform:
@@ -180,7 +180,7 @@ sim:
   dt: 0.02
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
-  add_ground_plane: True
+  add_ground_plane: False
   add_distant_light: True
   use_flatcache: True
   enable_scene_query_support: False
@@ -252,11 +252,11 @@ dynamics:
   hydrodynamics:
     # Below is modified parameters from axel's code
     squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [16.44998712, 15.79776044, 100, 13, 13, 6]
+    linear_damping: [16.44998712, 15.79776044, 100.0, 13.0, 13.0, 6.0]
     # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
     # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
     # SID BigSway [0, 100.0, 100, 13, 13, 0.82985084]
-    quadratic_damping: [2.942, 2.7617212, 10, 5, 5, 5]
+    quadratic_damping: [2.942, 2.7617212, 10.0, 5.0, 5.0, 5.0]
     # UUV [2.942, 2.7617212, 10, 5, 5, 5]
     # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
     # SID BigSway [17.257603, 100.0, 10, 5, 5, 17.33600724]
