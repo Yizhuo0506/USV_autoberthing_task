@@ -172,9 +172,6 @@ class USVVirtual(RLTask):
         self.alpha = self._task_cfg["dynamics"]["acceleration"]["alpha"]
         self.last_time = self._task_cfg["dynamics"]["acceleration"]["last_time"]
         # hydrodynamics constants
-        self.squared_drag_coefficients = self._task_cfg["dynamics"]["hydrodynamics"][
-            "squared_drag_coefficients"
-        ]
         self.linear_damping = self._task_cfg["dynamics"]["hydrodynamics"][
             "linear_damping"
         ]
@@ -255,7 +252,6 @@ class USVVirtual(RLTask):
         self.submerged_volume = torch.zeros(
             (self._num_envs), device=self._device, dtype=torch.float32
         )
-        # self.box_is_under_water = torch.zeros((self._num_envs), device=self._device, dtype=torch.float32)
 
         # forces to be applied
         self.hydrostatic_force = torch.zeros(
@@ -459,8 +455,6 @@ class USVVirtual(RLTask):
 
         # Collects the position and orientation of the platform
         self.root_pos, self.root_quats = self._heron.get_world_poses(clone=True)
-        # Debug : root_pos
-        # print(f"root_pos: {self.root_pos}")
         # Remove the offset from the different environments
         root_positions = self.root_pos - self._env_pos
         # Collects the velocity of the platform
@@ -552,8 +546,6 @@ class USVVirtual(RLTask):
 
         observations = {self._heron.name: {"obs_buf": self.obs_buf}}
 
-        # Debug : observations
-        # print(f"self.obs_buf: {self.obs_buf}")
         return observations
 
     def pre_physics_step(self, actions: torch.Tensor) -> None:
@@ -599,41 +591,18 @@ class USVVirtual(RLTask):
 
         # clear actions for reset envs
         thrusts[reset_env_ids] = 0
-        # print(self.actions)
 
         self.thrusters_dynamics.set_target_force(thrusts)
 
-        # print(f"thrusts: {thrusts}")
         return
 
     def apply_forces(self) -> None:
         """
         Applies all the forces to the platform and its thrusters."""
 
-        # self.drag[:,:]=self.hydrodynamics.ComputeHydrodynamicsEffects(0.01, self.root_quats, self.root_velocities[:,:]) #TODO: * self.box_is_under_water[:,:].mT
-        """
-        self._heron.thrusters.apply_forces_and_torques_at_pos(
-            forces=self.forces, is_global=False
-        )
-        """
         disturbance_forces = self.UF.get_disturbance_forces(self.root_pos)
         torque_disturbance = self.TD.get_torque_disturbance(self.root_pos)
 
-        # self._heron.base.apply_forces_and_torques_at_pos(
-        #    forces=floor_forces + self.drag[:,:3],
-        #    torques=torque_disturbance,
-        #    positions=self.root_pos,
-        #    is_global=True,
-        # )
-
-        """
-        self._heron.base.apply_forces_and_torques_at_pos(
-            forces=floor_forces,
-            torques=torque_disturbance,
-            positions=self.root_pos,
-            is_global=True,
-        )
-        """
         # Hydrostatic force
         self.hydrostatic_force[:, :] = (
             self.hydrostatics.compute_archimedes_metacentric_local(
@@ -647,11 +616,9 @@ class USVVirtual(RLTask):
             self.root_velocities[:, :],
             self.use_water_current,
             self.flow_vel,
-        )  # * self.box_is_under_water[:,:].mT
+        )  
 
         self.thrusters[:, :] = self.thrusters_dynamics.update_forces()
-        # (self.thrusters)
-        # self.thrusters[:,:] *= self.box_is_under_water.mT
 
         self._heron.base.apply_forces_and_torques_at_pos(
             forces=disturbance_forces
@@ -662,10 +629,7 @@ class USVVirtual(RLTask):
             + self.drag[:, 3:],
             is_global=False,
         )
-        # self._heron.base.apply_forces_and_torques_at_pos(forces=self.hydrostatic_force[:,:3], torques=self.hydrostatic_force[:,3:], is_global=False)
-        # print drag = self.drag
-        # print ("drag: ", self.drag)
-        # print("thrusts: ", self.thrusters)
+
         self._heron.thruster_left.apply_forces_and_torques_at_pos(
             forces=self.thrusters[:, :3], is_global=False
         )
@@ -791,8 +755,7 @@ class USVVirtual(RLTask):
         root_pos[:, 2] = self.heron_zero_height + (
             -1 * self.heron_mass / (self.waterplane_area * self.water_density)
         )
-        # Debug : reset position z
-        # print("root_pos_z: ", root_pos[:, 2])
+
         # Resets the states of the joints
         self.dof_pos[env_ids, :] = torch.zeros(
             (num_resets, self._heron.num_dof), device=self._device
@@ -809,12 +772,6 @@ class USVVirtual(RLTask):
         root_velocities[env_ids, 1] = (
             torch.rand(num_resets, device=self._device) * 3 - 1.5
         )
-
-        # Debug : velocity. apply x direction 3m/s for all envs
-        # root_velocities[env_ids] = torch.tensor(
-        #    [3.0, 0.0, 0.0, 0.0, 0.0, 0.0], device=self._device
-        # )
-        # print("root_velocities: ", root_velocities)
 
         # apply resets
         self._heron.set_joint_positions(self.dof_pos[env_ids], indices=env_ids)
@@ -859,7 +816,6 @@ class USVVirtual(RLTask):
         penalties = self._penalties.compute_penalty(
             self.current_state, self.actions, self.step
         )
-        # print("penalties: ", penalties)
         self.rew_buf[:] = overall_reward + penalties
         self.episode_sums = self.task.update_statistics(self.episode_sums)
         self.episode_sums = self._penalties.update_statistics(self.episode_sums)

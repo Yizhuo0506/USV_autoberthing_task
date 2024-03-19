@@ -6,8 +6,8 @@ experiment: USV_Virtual_GoToXY
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:1024,${...num_envs}}
-  envSpacing: 5 # default: 12
+  numEnvs: ${resolve_default:16,${...num_envs}}
+  envSpacing: 12 # default: 12
   maxEpisodeLength: 3000
   enableDebugVis: False
   action_mode: Continuous
@@ -116,7 +116,7 @@ env:
   task_parameters: 
     name: GoToXY
     position_tolerance: 0.1 # 0.01 default
-    kill_after_n_steps_in_tolerance: 1 # 50 default = 10seconds
+    kill_after_n_steps_in_tolerance: 50 # 50 default = 10seconds
     max_spawn_dist: 12.0
     min_spawn_dist: 0.3
     kill_dist: 20.0
@@ -180,7 +180,7 @@ sim:
   dt: 0.02
   use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
-  add_ground_plane: True
+  add_ground_plane: False
   add_distant_light: True
   use_flatcache: True
   enable_scene_query_support: False

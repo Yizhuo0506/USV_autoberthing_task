@@ -8,6 +8,7 @@ __maintainer__ = "Junghwan Ro"
 __email__ = "jro37@gatech.edu"
 __status__ = "development"
 
+from omniisaacgymenvs.tasks.USV.USV_capture_xy import CaptureXYTask
 from omniisaacgymenvs.tasks.USV.USV_go_to_xy import GoToXYTask
 from omniisaacgymenvs.tasks.USV.USV_go_to_pose import (
     GoToPoseTask,
@@ -49,6 +50,7 @@ class TaskFactory:
 
 
 task_factory = TaskFactory()
+task_factory.register("CaptureXY", CaptureXYTask)
 task_factory.register("GoToXY", GoToXYTask)
 task_factory.register("GoToPose", GoToPoseTask)
 task_factory.register("KeepXY", KeepXYTask)

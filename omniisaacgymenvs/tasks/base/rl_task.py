@@ -71,6 +71,9 @@ class RLTask(BaseTask):
         self.randomize_actions = False
         self.randomize_observations = False
 
+        self.water_visualization = self._cfg["task"]["env"].get(
+            "waterVisualization", False
+        )
         self.clip_obs = self._cfg["task"]["env"].get("clipObservations", np.Inf)
         self.clip_actions = self._cfg["task"]["env"].get("clipActions", np.Inf)
         self.rl_device = self._cfg.get("rl_device", "cuda:0")
@@ -150,12 +153,13 @@ class RLTask(BaseTask):
             print(self._ground_plane_path)
             scene.add_default_ground_plane(prim_path=self._ground_plane_path)
 
-        from omni.isaac.core.utils.stage import add_reference_to_stage
+        if self.water_visualization:
+            from omni.isaac.core.utils.stage import add_reference_to_stage
 
-        add_reference_to_stage(
-            "/home/junghwan/RANS/omniisaacgymenvs/robots/usd/water.usd",
-            "/World/Water",
-        )
+            add_reference_to_stage(
+                "/home/junghwan/RANS/omniisaacgymenvs/robots/usd/water.usd",
+                "/World/Water",
+            )
         prim_paths = self._cloner.generate_paths("/World/envs/env", self._num_envs)
         self._env_pos = self._cloner.clone(
             source_prim_path="/World/envs/env_0",

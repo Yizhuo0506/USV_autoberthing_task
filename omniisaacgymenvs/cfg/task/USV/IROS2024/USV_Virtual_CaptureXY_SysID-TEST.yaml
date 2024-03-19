@@ -2,17 +2,18 @@
 name: USVVirtual
 
 physics_engine: ${..physics_engine}
-experiment: USV_Virtual_GoToXY
+experiment: USV_Virtual_CaptureXY
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:1024,${...num_envs}}
-  envSpacing: 12
+  numEnvs: ${resolve_default:16,${...num_envs}}
+  envSpacing: 5
   maxEpisodeLength: 3000
   enableDebugVis: False
   action_mode: Continuous
   numQuantizedActions: 1
   horizon_length: 16
+  waterVisualization: True
 
   observation_frame: "local"
 
@@ -31,8 +32,8 @@ env:
     flow_velocity: [0.0, 0.0, 0.0] # x, y, z
 
   disturbances:
-    # Uneven floor generation
     forces:
+      # Force disturbance generation
       use_force_disturbance: True
       use_constant_force: True
       use_sinusoidal_force: True
@@ -62,14 +63,14 @@ env:
     observations:
       # Add noisy observations
       add_noise_on_pos: True
-      position_noise_min: -0.03 # default - 0.01 m
-      position_noise_max:  0.03 # default - 0.01 m
+      position_noise_min: -0.03 # default - 0.03 m
+      position_noise_max:  0.03 # default - 0.03 m
       add_noise_on_vel: True
-      velocity_noise_min: -0.03 # default - 0.01 m/s
-      velocity_noise_max:  0.03 # default - 0.01 m/s
+      velocity_noise_min: -0.03 # default - 0.03 m/s
+      velocity_noise_max:  0.03 # default - 0.03 m/s
       add_noise_on_heading: True
-      heading_noise_min: -0.025 # default - 0.025
-      heading_noise_max:  0.025 # default - 0.025
+      heading_noise_min: -0.025 # default - 0.025 rad
+      heading_noise_max:  0.025 # default - 0.025 rad
 
     actions:
       # Add noisy actions
@@ -78,7 +79,7 @@ env:
       max_action_noise:  0.05
 
     mass:
-      # Add mass disturbances
+      # Add mass randomization
       add_mass_disturbances: True
       min_mass: 34.96
       max_mass: 36.96
@@ -114,38 +115,42 @@ env:
       right_rand: 0.5 # If it is 0.2 it means 0.8 to 1.2
 
   task_parameters: 
-    name: GoToXY
-    position_tolerance: 0.1 # 0.01 default
-    kill_after_n_steps_in_tolerance: 1 # 50 default = 10seconds
+    name: CaptureXY
+    position_tolerance: 0.1 # 0.1 default
+    kill_after_n_steps_in_tolerance: 1 # 1 means kill after arriving at the goal
     max_spawn_dist: 12.0
     min_spawn_dist: 0.3
     kill_dist: 20.0
     boundary_cost: 25.0
-    goal_reward: 30.0 # if not used, set to 0.0
-    time_reward: -0.2 # if not used, set to -0.0
+    goal_reward: 30.0 # Goal reward for reaching the goal
+    time_reward: -0.2 # Time penalty for each step
 
   reward_parameters:
-    name: GoToXY
+    name: CaptureXY
     reward_mode: linear
     exponential_reward_coeff: 0.25
 
   penalties_parameters:
     penalize_energy: True
-    penalize_energy_fn: "lambda x,step : (torch.exp(-torch.sum(x**2, dim=-1)) - 1.0) * 0.01" # 0.01 default
-    penalize_energy_c1: 0.01 # 0.01 default
-    penalize_energy_c2: 0.00
+    penalize_energy_fn: "lambda x,step : (torch.exp(-torch.sum(x**2, dim=-1)) - 1.0) * 0.01" 
+    penalize_energy_c1: 0.00 # Not used in this version
+    penalize_energy_c2: 0.00 # Not used in this version
     penalize_linear_velocities: False
     penalize_linear_velocities_fn: "lambda x,step: -torch.norm(x, dim=-1)*0.01"
-    penalize_linear_velocities_c1: 0.01
-    penalize_linear_velocities_c2: 0.00
+    penalize_linear_velocities_c1: 0.00 # Not used in this version
+    penalize_linear_velocities_c2: 0.00 # Not used in this version
     penalize_angular_velocities: False
     penalize_angular_velocities_fn: "lambda x,step : -torch.abs(x)*0.01 + 0.0"
-    penalize_angular_velocities_c1: 0.01
-    penalize_angular_velocities_c2: 0.00
+    penalize_angular_velocities_c1: 0.00 # Not used in this version
+    penalize_angular_velocities_c2: 0.00 # Not used in this version
     penalize_angular_velocities_variation: True
     penalize_angular_velocities_variation_fn: "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 1.0"
+    penalize_angular_velocities_variation_c1: 0.00 # Not used in this version
+    penalize_angular_velocities_variation_c2: 0.00 # Not used in this version
     penalize_action_variation: False
     penalize_action_variation_fn: "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 0.01"
+    penalize_action_variation_c1: 0.00 # Not used in this version
+    penalize_action_variation_c2: 0.00 # Not used in this version
 
   platform:
     randomization:
@@ -237,29 +242,24 @@ dynamics:
     timeConstant: 0.05
     interpolation: 
       numberOfPointsForInterpolation: 1000
-      #                                     -1.0, -0.9, -0.8, -0.7, -0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6,  0.7,  0.8,  0.9,  1.0]
+      # CMD                                 -1.0, -0.9, -0.8, -0.7, -0.6,-0.5,-0.4,-0.3,-0.2,-0.1, 0.0, 0.1, 0.2, 0.3, 0.4, 0.5, 0.6,  0.7,  0.8,  0.9,  1.0]
       interpolationPointsFromRealDataLeft: [-3.8, -3.8, -3.6, -3.6, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 10.0, 15.0, 21.0, 23.0, 22.0]
-      # Measured Thruster Model : [-3.8, -3.8, -3.6, -3.6, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 10.0, 15.0, 21.0, 23.0, 22.0]
-      # UUV Thruster Model : [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
+      # Nominal Thruster Model : [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
+      # SID Thruster Model : [-3.8, -3.8, -3.6, -3.6, -1.6, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.0, 10.0, 15.0, 21.0, 23.0, 22.0]
       interpolationPointsFromRealDataRight: [-5.0, -5.0, -5.0, -4.6, -2.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.6, 10.0, 17.0, 24.0, 24.0, 23.0]
-      # Measured Thruster Model : [-5.0, -5.0, -5.0, -4.6, -2.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.6, 10.0, 17.0, 24.0, 24.0, 23.0]
-      # UUV Thruster Model : [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
-      # Previous Measurement [-5.05215, -5.0031, -4.26735, -2.20725, -1.6677, -0.73575, -0.4905, -0.14715, -0.0981, 0.0, 0.0, 0.0, 0.14715, 0.2943, 1.0791, 5.1993, 9.17235, 10.791, 15.8922, 22.3668, 22.563]
+      # Nominal Thruster Model : [-19.88, -16.52, -12.6, -5.6, -1.4, 0.0, 2.24, 9.52, 21.28, 28.0, 33.6]
+      # SID Thruster Model : [-5.0, -5.0, -5.0, -4.6, -2.2, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 0.0, 4.6, 10.0, 17.0, 24.0, 24.0, 23.0]
     leastSquareMethod: 
       neg_cmd_coeff: [88.61013986, 163.99545455, 76.81641608, 11.9476958, 0.20374615]
       pos_cmd_coeff: [-197.800699, 334.050699, -97.6197902, 7.59341259, -0.0301846154]
   
   hydrodynamics:
-    # Below is modified parameters from axel's code
-    squared_drag_coefficients: [0, 0, 0, 0, 0, 0] # Currently not used
-    linear_damping: [0.0, 100.0, 100.0, 13.0, 13.0, 0.82985084]
-    # UUV [16.44998712, 15.79776044, 100, 13, 13, 6]
-    # SID 240228 [0, 47.39328132, 100, 13, 13, 0.82985084]
-    # SID BigSway [0.0, 100.0, 100.0, 13.0, 13.0, 0.82985084]
-    quadratic_damping: [17.257603, 100.0, 10.0, 5.0, 5.0, 17.33600724]
-    # UUV [2.942, 2.7617212, 10, 5, 5, 5]
-    # SID 240228 [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
-    # SID BigSway [17.257603, 100.0, 10.0, 5.0, 5.0, 17.33600724]
+    linear_damping: [0.0, 99.99, 99.99, 13.0, 13.0, 0.82985084]
+    # Nominal [16.44998712, 15.79776044, 100, 13, 13, 6]
+    # SID [0.0, 99.99, 99.99, 13.0, 13.0, 0.82985084]
+    quadratic_damping: [17.257603, 99.99, 10.0, 5.0, 5.0, 17.33600724]
+    # Nominal [2.942, 2.7617212, 10, 5, 5, 5]
+    # SID [17.257603, 99.99, 10.0, 5.0, 5.0, 17.33600724]
     linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
     offset_linear_damping: 0.0
     offset_lin_forward_damping_speed: 0.0
@@ -274,11 +274,9 @@ dynamics:
     material_density: 133
     water_density: 1000
     mass: 35.96
-    # UUV 28.0, Real 35.0
-    # Moment of Inertia : UUV 10.0, Real(estimated) 7.846
     box_width: 1.0
     box_length: 1.3
-    waterplane_area: 0.233333 # Default: 0.233333, to satisfy Kingfisher/Heron draught 120mm
+    waterplane_area: 0.233333 # Kingfisher/Heron draught 120mm in Spec Sheet
     heron_zero_height: 0.24
 
   acceleration:

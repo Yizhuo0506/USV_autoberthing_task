@@ -15,6 +15,69 @@ EPS = 1e-6  # small constant to avoid divisions by 0 and log(0)
 
 
 @dataclass
+class CaptureXYReward:
+    """ "
+    Reward function and parameters for the CaptureXY task."""
+
+    prev_position_error = None
+    reward_mode: str = "exponential"
+    position_scale: float = 1.0
+    exponential_reward_coeff: float = 0.25
+    # r_align = La1 * exp(La2 * heading_error**4)
+    align_la1: float = 0.02
+    align_la2: float = -10.0
+    align_la3: float = -0.1
+
+    def __post_init__(self) -> None:
+        """
+        Checks that the reward parameters are valid."""
+
+        assert self.reward_mode.lower() in [
+            "linear",
+            "square",
+            "exponential",
+        ], "Linear, Square and Exponential are the only currently supported mode."
+
+    def compute_reward(
+        self,
+        current_state: torch.Tensor,
+        actions: torch.Tensor,
+        position_error: torch.Tensor,
+        heading_error: torch.Tensor,
+    ) -> torch.Tensor:
+        """
+        Defines the function used to compute the reward for the CaptureXY task."""
+        if self.prev_position_error is None:
+            self.prev_position_error = position_error
+
+        if self.reward_mode.lower() == "linear":
+            distance_reward = self.position_scale * (
+                self.prev_position_error - position_error
+            )
+        elif self.reward_mode.lower() == "square":
+            distance_reward = self.position_scale * (
+                self.prev_position_error.pow(2) - position_error.pow(2)
+            )
+        elif self.reward_mode.lower() == "exponential":
+            distance_reward = self.position_scale * (
+                torch.exp(-position_error / self.exponential_reward_coeff)
+                - torch.exp(-self.prev_position_error / self.exponential_reward_coeff)
+            )
+        else:
+            raise ValueError("Unknown reward type.")
+
+        alignment_reward = self.align_la1 * (
+            torch.exp(self.align_la2 * heading_error.pow(4))
+            + torch.exp(self.align_la3 * heading_error.pow(2))
+        )
+
+        # Update previous position error
+        self.prev_position_error = position_error
+
+        return distance_reward, alignment_reward
+
+
+@dataclass
 class GoToXYReward:
     """ "
     Reward function and parameters for the GoToXY task."""

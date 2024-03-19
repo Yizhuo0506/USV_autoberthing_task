@@ -73,21 +73,6 @@ class Core:
             self._obs_buffer[:, 2] = current_state["angular_velocity"]
             self._obs_buffer[:, 3:8] = self._task_data
 
-            # Debug: print the sway velocity
-            # print(f"sway velocity: {self._obs_buffer[:, 1]}")
-
-            """
-            # Position error in local frame
-            self._obs_buffer[:, 3] = (
-                cos_theta * self._task_data[:, 0] + sin_theta * self._task_data[:, 1]
-            )
-            self._obs_buffer[:, 4] = (
-                -sin_theta * self._task_data[:, 0] + cos_theta * self._task_data[:, 1]
-            )
-            self._obs_buffer[:, 5] = self._task_data[:, 2]
-            self._obs_buffer[:, 6] = self._task_data[:, 3]
-            """
-
         return self._obs_buffer
 
     def create_stats(self, stats: dict) -> dict:
@@ -171,13 +156,14 @@ class TaskDict:
     """
 
     def __init__(self) -> None:
-        self.gotoxy = 0
-        self.gotopose = 1
-        self.keepxy = 2
-        self.keepxyo = 3
-        self.trackxyvel = 4
-        self.trackxyovel = 5
-        self.trackxyvelheading = 6
+        self.capturexy = 0
+        self.gotoxy = 1
+        self.gotopose = 2
+        self.keepxy = 3
+        self.keepxyo = 4
+        self.trackxyvel = 5
+        self.trackxyovel = 6
+        self.trackxyvelheading = 7
 
 
 def parse_data_dict(
