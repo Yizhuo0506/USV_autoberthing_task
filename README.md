@@ -13,7 +13,7 @@ Our framework includes a highly parallelized environment with domain randomizati
 ---
 
 ## How to run - Quick TEST
-1. **Training**
+1. **Training** 
   PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP headless=True enable_livestream=True experiment=Capture-TEST
 
 2. **Test**
@@ -267,7 +267,7 @@ If you use the current repository in your work, we suggest citing the following 
 │       └── USV                        # USV training configurations
 ├── checkpoints                        # Checkpoints for saved models
 ├── conf_runs                          # Configuration runs for training
-├── demos                              # Demonstration files (gifs)
+├── demos                              # Demonstration files, gifs
 ├── envs
 │   └── USV                            # Environment related to Buoyancy, Hydrodynamics
 ├── images                             # Image files
