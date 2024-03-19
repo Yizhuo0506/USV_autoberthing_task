@@ -159,59 +159,6 @@ class HydrodynamicsObject:
         # print("damping_matrix: ", damping_matrix)
         return damping_matrix
 
-    """ 
-    def GetAddedMass(self):
-        print(torch.tensor(self.scaling_added_mass * (self.added_mass + self.offset_added_mass), device=self.device))
-        return torch.tensor(self.scaling_added_mass * (self.added_mass + self.offset_added_mass), device=self.device)
-    
-
-    #negligeable in our case
-    def ComputeAddedCoriolisMatrix(self, vel):
-
-        // This corresponds to eq. 6.43 on p. 120 in
-        // Fossen, Thor, "Handbook of Marine Craft and Hydrodynamics and Motion
-        // Control", 2011  
-        
-        ##all is zero for now 
-
-        ab = torch.matmul(self.GetAddedMass().mT, vel).mT  #num envs * 6
-        Sa = -1 * torch.cross(torch.zeros([self._num_envs,6],device=self.device),torch.transpose(ab[:,:3],0,1), dim=1)
-        self._Ca[-3:,:3] = Sa
-        self._Ca[:3,-3:] = Sa
-        self._Ca[-3:,-3:] = -1 * torch.cross(torch.zeros([3,self._num_envs]),ab[:,-3:].mT, dim=1) 
-        
-        return 
-    
-    
-    def ComputeAcc(self, velRel, time, alpha):
-    #Compute Fossen's nu-dot numerically. This is mandatory as Isaac does
-    #not report accelerations
-
-        if self._last_time < 0:
-            self._last_time = time
-            self._last_vel_rel = velRel
-            return
-
-        dt = time #time - self._last_time
-        if dt <= 0.0:
-            return
-
-        acc = (velRel - self._last_vel_rel) / dt
-
-        #   TODO  We only have access to the acceleration of the previous simulation
-        #       step. The added mass will induce a strong force/torque counteracting
-        #       it in the current simulation step. This can lead to an oscillating
-        #       system.
-        #       The most accurate solution would probably be to first compute the
-        #       latest acceleration without added mass and then use this to compute
-        #       added mass effects. This is not how gazebo works, though.
-
-        self._filtered_acc = (1.0 - alpha) * self._filtered_acc + alpha * acc
-        self._last_time = time
-        self._last_vel_rel = velRel.copy()
-
-        """
-
     def ComputeHydrodynamicsEffects(
         self, time, quaternions, world_vel, use_water_current, flow_vel
     ):
@@ -244,32 +191,10 @@ class HydrodynamicsObject:
                 [self.relative_lin_velocities, self.local_ang_velocities]
             )
 
-        # Update added Coriolis matrix
-        # self.ComputeAddedCoriolisMatrix(self.local_velocities)
         # Update damping matrix
         damping_matrix = self.ComputeDampingMatrix(self.local_velocities)
-        # Filter acceleration (see issue explanation above)
-        # self.ComputeAcc(self.local_velocities, time, self.alpha)
-        # We can now compute the additional forces/torques due to this dynamic
-        # effects based on Eq. 8.136 on p.222 of Fossen: Handbook of Marine Craft ...
+
         # Damping forces and torques
         self.drag = -1 * damping_matrix * self.local_velocities
-        # Added-mass forces and torques
-        # added = torch.matmul(-self.GetAddedMass(), self._filtered_acc)
-        # reshaped_added_tensor = torch.cat((added, torch.zeros(3 * 6 - len(added))), dim=0).view(3, 6)
 
-        # Added Coriolis term
-        # cor = torch.matmul(-self._Ca, self.local_velocities.mT).mT
-
-        # All additional (compared to standard rigid body) Fossen terms combined.
-
-        # cor and added should be zero from now
-
-        # print("damping: ", damping)
-        # print("added: ", reshaped_added_tensor)
-        # print("cor: ", cor)
-
-        # tau = damping + reshaped_added_tensor + cor
-
-        # print("tau: ", tau)
         return self.drag
