@@ -1,60 +1,56 @@
-# Reinforcement Learning Framework for Unmanned Surface Vehicle
+# Reinforcement Learning Framework for Autonomous Surface Vehicle (ASV)
 
 ## About this repository
 
-This repo is developed from RANS(Reinforcement Learning Autonomous Navigating Systems)(https://github.com/elharirymatteo/RANS/tree/main). RANS is an extension of the Isaac Gym Envs library present at https://github.com/NVIDIA-Omniverse/OmniIsaacGymEnvs. 
+This repository contains the implementation and simulation environment used in the research paper "Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture." It extends the RANS (Reinforcement Learning Autonomous Navigating Systems) (https://github.com/elharirymatteo/RANS/tree/main) framework, integrating buoyancy and hydrodynamics models for efficient ASV training and operation.
 
-Firstly, we start by providing a 2D environmnet, which serves as a simpler version of a realistic spacecraft. The modelled 2D system can be tested with a real rigid structure floating on top of an extremely flat and smooth surface using air bearings. This system is a common solution to emulate free-floating and free-flying satellite motion. This intermediate step is especially important for demonstrating the sim-to-real transfer of the DRL policies trained within Omniverse. 
+Our framework includes a highly parallelized environment with domain randomization and system identification techniques to bridge the sim-to-real gap for ASV applications. This repository aims to support ASV autonomy, particularly for tasks such as floating waste capture, contributing to environmental conservation efforts.
 
-Secondly, we provide a full 3D environment to allow the simulation of free flying spacecrafts in space.
-
-| 3DoF go to XY | 3DoF go to Pose | 6DoF go to XYZ |
-| :-: | :-: | :-: |
-| ![3Dof_GoToXY_v2](omniisaacgymenvs/demos/3Dof_GoToXY_v2.gif) | ![3Dof_GoToPose_v2](omniisaacgymenvs/demos/3Dof_GoToPose_v2.gif) | ![6Dof_GoToXYZ_v8](omniisaacgymenvs/demos/6Dof_GoToXYZ_v8.gif) |
+| Without Water Visualization | With Water Visualization |
+| :-: | :-: |
+| ![WithoutWater_CaptureXY](omniisaacgymenvs/demos/WithoutWater_CaptureXY.gif) | ![WithWater_CaptureXY](omniisaacgymenvs/demos/WithWater_CaptureXY.gif) | 
 
 ---
 
-## How to run
+## How to run - Quick TEST
 1. **Training**
-  PYTHON_PATH scripts/rlgames_train.py task=buoyancy/Buoyancy_GoToPose train=buoyancy/Buoyancy_PPOcontinuous_MLP headless=True num_envs=4096 enable_livestream=True
+  PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP headless=True enable_livestream=True experiment=Capture-TEST
 
 2. **Test**
+  PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP test=True checkpoint=runs/Capture-TEST/nn/Capture-TEST.pth num_envs=32
 
 
+## Task Description - Capture + @
 
-## Task Description
+Currently we provide main task capture, which was highlighted in the paper, with minor tasks GoToPose, KeepXY, TrackXYVelocity, TrackXYOVelocity could be run with minor update as well. :
 
-Currently we provide two primary environments, each tailored to simulate distinct robotic systems:
+1. **Capture Task for ASV:**
+   The "Capture" task is formulated to simulate the activity of an ASV in pursuing and collecting water floating waste autonomously in a two-dimensional space. The ASV must effectively navigate towards a predefined target, and capture it by passing over the target with precision.
 
-1. **3 Degrees of Freedom (3DoF) Robot Simulation:**
-   The simulator replicates the behavior of the 3DoF robot situated in the ZeroG Lab of the University of Luxembourg (SpaceR group). The system is equipped with 8 thrusters.
+   Successful capture is defined by the ASV's alignment and transit over the target with a maximum deviation of 0.3 meters(0.1 in training) from its center of mass to the target. The test environment is obstacle-free, with a realistic operational range of 10 meters and a field of view restricted to 90 degrees, mirroring the potential future use of onboard cameras for target detection.
 
-   In this environment, the following tasks are defined:
-   - **GoToXY:** Task for position control.
-   - **GoToPose-2D:** Task for position-attitude control.
-   - **TrackXYVelocity:** Agent learns to track linear velocities in the xy plane.
-   - **TrackXYOVelocity:** Agent learns to track both linear and angular velocities.
-
-2. **6 Degrees of Freedom (6DoF) Robot Simulation:**
-   The simulator emulates spacecraft maneuvers in space, featuring a 6DoF robot configuration with 16 thrusters.
+2. **Further possible tasks:**
+   These tasks are providing additional training scenarios for the ASV that can be utilized with minimal adjustments:
    
-   The tasks defined for this environment are:
-   - **GoToXYZ:** Task for precise spatial positioning.
-   - **GoToPose-3D:** Task for accurate spatial positioning and orientation.
+   The minor tasks defined are:
+   - **GoToPose:** This task focuses on position-attitude control where the ASV must navigate to a specific location and orientation in the two-dimensional space.
+   - **KeepXY:** This task, ASV is required to maintain its position within a specified XY coordinate against disturbances.
+   - **TrackXYVelocity** This task challenges the ASV to match and maintain a set linear velocity along the XY plane.
+   - **TrackXYOVelocity** An extension of the "TrackXYVelocity" task, this scenario additionally incorporates angular velocity tracking.
 
-#### Thrusters Configuration
-The default thrusters configuration for both 3DoF and 6DoF scenarios is depicted in the following images, showing the direction of forces applied by the thrusters mounted on the systems.
+#### ASV Configuration
+For real-world deployment, The Kingfisher ASV with a catamaran design, 1.35m long and 0.98m wide, weighing 35.96kg was used. It's powered by two hull-mounted thrusters, controlled at a frequency of at least 10 Hz. Processing is handled by an NVIDIA Jetson Xavier, and energy is supplied by a 22 Ah 4-cell LiPo battery. Localization uses an SBG Ellipse-D IMU and RTK GPS, providing high precision in position (0.02m), velocity (0.03m/s), and heading (0.5°). Sensors like cameras and lasers were present but not utilized for these tests. Training environment mimics the sensor noise.
 
-| 3DoF Thrusters Configuration | 6DoF Thrusters Configuration |
+| ASV in Isaac Environment | ASV in Real Environment |
 | :-: | :-: |
-| <img src="omniisaacgymenvs/images/config3Dof.png" width="200"/> | <img src="omniisaacgymenvs/images/config6Dof.png" width="200"/> |
+| <img src="omniisaacgymenvs/images/ASV_isaac.png" width="300"/> | <img src="omniisaacgymenvs/images/ASV_real.png" width="300"/> |
 
 ---
 ## Installation
 
-Follow the Isaac Sim [documentation](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/install_basic.html) to install the latest Isaac Sim release. 
+Follow the Isaac Sim [documentation](https://docs.omniverse.nvidia.com/isaacsim/latest/installation/index.html) to install the 2022.2.1 Isaac Sim release. 
 
-*Examples in this repository rely on features from the most recent Isaac Sim release. Please make sure to update any existing Isaac Sim build to the latest release version, 2022.2.0, to ensure examples work as expected.*
+*Examples in this repository rely on features from the 2022.2.1 Isaac Sim release. Please make sure to match the correct version.*
 
 ### OmniverseIsaacGymEnvs
 Once installed, this repository can be used as a python module, `omniisaacgymenvs`, with the python executable provided in Isaac Sim.
@@ -62,7 +58,7 @@ Once installed, this repository can be used as a python module, `omniisaacgymenv
 To install `omniisaacgymenvs`, first clone this repository:
 
 ```bash
-git clone https://github.com/elharirymatteo/RANS.git
+git clone https://github.com/JunghwanRo/RANS-ASV-IROS2024.git
 ```
 
 Once cloned, locate the [python executable in Isaac Sim](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/install_python.html). By default, this should be `python.sh`. We will refer to this path as `PYTHON_PATH`.
@@ -105,30 +101,27 @@ PYTHON_PATH -m pip install rl_games .
 To train your first policy, run:
 
 ```bash
-PYTHON_PATH scripts/rlgames_train.py task=virtual_floating_platform/MFP2D_Virtual_GoToXY train=virtual_floating_platform/MFP2D_PPOmulti_dict_MLP
+PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP
 ```
 
-You should see an Isaac Sim window pop up. Once Isaac Sim initialization completes, the FloatingPlatform scene will be constructed and simulation will start running automatically. The process will terminate once training finishes.
-
-
-Here's another example - GoToPose - using the multi-threaded training script:
-
-```bash
-PYTHON_PATH scripts/rlgames_train_mt.py task=virtual_floating_platform/MFP2D_Virtual_GoToPose train=virtual_floating_platform/MFP2D_PPOmulti_dict_MLP
-```
+You should see an Isaac Sim window pop up. Once Isaac Sim initialization completes, the scene will be constructed and simulation will start running automatically. The process will terminate once training finishes.
 
 Note that by default, we show a Viewport window with rendering, which slows down training. You can choose to close the Viewport window during training for better performance. The Viewport window can be re-enabled by selecting `Window > Viewport` from the top menu bar.
 
 To achieve maximum performance, you can launch training in `headless` mode as follows:
 
 ```bash
-PYTHON_PATH scripts/rlgames_train.py task=virtual_floating_platform/MFP2D_Virtual_GoToPose train=virtual_floating_platform/MFP2D_PPOmulti_dict_MLP headless=True
+PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP headless=True
 ```
 
 #### A Note on the Startup Time of the Simulation
 
 Some of the examples could take a few minutes to load because the startup time scales based on the number of environments. The startup time will continually
-be optimized in future releases.
+be optimized in future releases. 
+
+#### Water Visualization
+
+If you want to activate water visualization, you can activate it in the config .yaml file, 'waterVisualization' to True.
 
 </details>
 
@@ -141,7 +134,7 @@ defaults to the task name, but can also be overridden via the `experiment` argum
 To load a trained checkpoint and continue training, use the `checkpoint` argument:
 
 ```bash
-PYTHON_PATH scripts/rlgames_train.py task=virtual_floating_platform/MFP2D_Virtual_GoToPose train=virtual_floating_platform/MFP2D_PPOmulti_dict_MLP checkpoint=runs/MFP2D_Virtual_GoToPose/nn/MFP2D_Virtual_GoToPose.pth
+PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP checkpoint=runs/Capture-TEST/nn/Capture-TEST.pth
 ```
 
 To load a trained checkpoint and only perform inference (no training), pass `test=True` 
@@ -149,7 +142,7 @@ as an argument, along with the checkpoint name. To avoid rendering overhead, you
 also want to run with fewer environments using `num_envs=64`:
 
 ```bash
-PYTHON_PATH scripts/rlgames_train.py task=virtual_floating_platform/MFP2D_Virtual_GoToPose train=virtual_floating_platform/MFP2D_PPOmulti_dict_MLP checkpoint=runs/MFP2D_Virtual_GoToPose/nn/MFP2D_Virtual_GoToPose.pth test=True num_envs=64
+PYTHON_PATH sscripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP checkpoint=runs/Capture-TEST/nn/Capture-TEST.pth test=True num_envs=64
 ```
 
 Note that if there are special characters such as `[` or `=` in the checkpoint names, 
@@ -166,7 +159,7 @@ All scripts provided in `omniisaacgymenvs/scripts` can be launched directly with
 To test out a task without RL in the loop, run the random policy script with:
 
 ```bash
-PYTHON_PATH scripts/random_policy.py task=virtual_floating_platform/MFP2D_Virtual_GoToXY
+PYTHON_PATH scripts/random_policy.py USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST
 ```
 
 This script will sample random actions from the action space and apply these actions to your task without running any RL policies. Simulation should start automatically after launching the script, and will run indefinitely until terminated.
@@ -177,7 +170,7 @@ This script will sample random actions from the action space and apply these act
 To run a simple form of PPO from `rl_games`, use the single-threaded training script:
 
 ```bash
-PYTHON_PATH scripts/rlgames_train.py task=virtual_floating_platform/MFP2D_Virtual_GoToXY
+PYTHON_PATH scripts/rlgames_train.py USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST
 ```
 
 This script creates an instance of the PPO runner in `rl_games` and automatically launches training and simulation. Once training completes (the total number of iterations have been reached), the script will exit. If running inference with `test=True checkpoint=<path/to/checkpoint>`, the script will run indefinitely until terminated. Note that this script will have limitations on interaction with the UI.
@@ -188,7 +181,7 @@ This script creates an instance of the PPO runner in `rl_games` and automaticall
 Lastly, we provide a multi-threaded training script that executes the RL policy on a separate thread than the main thread used for simulation and rendering:
 
 ```bash
-PYTHON_PATH scripts/rlgames_train_mt.py task=virtual_floating_platform/MFP2D_Virtual_GoToXY
+PYTHON_PATH scripts/rlgames_train_mt.py USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST
 ```
 
 This script uses the same RL Games PPO policy as the above, but runs the RL loop on a new thread. Communication between the RL thread and the main thread happens on threaded Queues. Simulation will start automatically, but the script will **not** exit when training terminates, except when running in headless mode. Simulation will stop when training completes or can be stopped by clicking on the Stop button in the UI. Training can be launched again by clicking on the Play button. Similarly, if running inference with `test=True checkpoint=<path/to/checkpoint>`, simulation will run until the Stop button is clicked, or the script will run indefinitely until the process is terminated.
@@ -201,7 +194,7 @@ We use [Hydra](https://hydra.cc/docs/intro/) to manage the config.
  
 Common arguments for the training scripts are:
 
-* `task=TASK` - Selects which task to use. Any of `MFP2D_Virtual_GoToXY`, `MFP2D_Virtual_GoToPose`, `MFP2D_Virtual_TrackXYVelocity`, `MFP2D_Virtual_TrackXYOVelocity`, `MFP3D_Virtual_GoToXYZ`, `MFP3D_Virtual_GoToPose`, (these correspond to the config for each environment in the folder `omniisaacgymenvs/cfg/task/virtual_floating_platform`)
+* `task=TASK` - Selects which task to use. Any of `USV_Virtual_CaptureXY`, `USV_Virtual_GoToPose`, `USV_Virtual_TrackXYVelocity`, `USV_Virtual_TrackXYOVelocity`, (these correspond to the config for each environment in the folder `omniisaacgymenvs/cfg/task/USV`)
 * `train=TRAIN` - Selects which training config to use. Will automatically default to the correct config for the environment (ie. `<TASK>PPO`).
 * `num_envs=NUM_ENVS` - Selects the number of environments to use (overriding the default number of environments set in the task config).
 * `seed=SEED` - Sets a seed value for randomization, and overrides the default seed in the task config
@@ -246,11 +239,11 @@ You can run (WandB)[https://wandb.ai/] with OmniIsaacGymEnvs by setting `wandb_a
 If you use the current repository in your work, we suggest citing the following papers:
 
 ```bibtex
-@article{el2023drift,
-  title={DRIFT: Deep Reinforcement Learning for Intelligent Floating Platforms Trajectories},
-  author={El-Hariry, Matteo and Richard, Antoine and Muralidharan, Vivek and Yalcin, Baris Can and Geist, Matthieu and Olivares-Mendez, Miguel},
-  journal={arXiv preprint arXiv:2310.04266},
-  year={2023}
+@article{batista2024advancing,
+  title={Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture},
+  author={Batista, Luis F. W. and Ro, Junghwan and Richard, Antoine and Schroepfer, Pete and Hutchinson, Seth and Pradalier, Cedric},
+  journal={To be published},
+  year={2024}
 }
 
 @article{el2023rans,
@@ -269,14 +262,14 @@ If you use the current repository in your work, we suggest citing the following 
 │   ├── controller                     # Optimal Controllers configurations
 │   ├── hl_task                        # High-level task configurations
 │   ├── task                           # Task configurations
-│   │   └── virtual_floating_platform  # Virtual floating platform task configurations
+│   │   └── USV                        # USV task configurations
 │   └── train                          # Training configurations
-│       └── virtual_floating_platform  # Virtual floating platform training configurations
+│       └── USV                        # USV training configurations
 ├── checkpoints                        # Checkpoints for saved models
 ├── conf_runs                          # Configuration runs for training
 ├── demos                              # Demonstration files (gifs)
 ├── envs
-│   └── BuoyancyPhysics                # Environment related to buoyancy physics
+│   └── USV                            # Environment related to Buoyancy, Hydrodynamics
 ├── images                             # Image files
 ├── mujoco_envs
 │   ├── controllers                    # Controllers for Mujoco environments
@@ -293,12 +286,11 @@ If you use the current repository in your work, we suggest citing the following 
 ├── skrl                               # Reinforcement learning utilities
 ├── tasks
 │   ├── base                           # Base task implementations
-│   ├── buoyancy                       # Buoyancy-related tasks
 │   ├── factory                        # Factory task configurations
 │   │   └── yaml                       # YAML configurations for factory tasks
 │   ├── shared                         # Shared task implementations
 │   ├── utils                          # Task utility functions
-│   └── virtual_floating_platform      # Task implementations for virtual floating platform
+│   └── USV                            # USV-related tasks
 ├── utils
 │   ├── config_utils                   # Configuration utilities
 │   ├── domain_randomization           # Domain randomization utilities
