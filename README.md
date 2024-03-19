@@ -12,7 +12,7 @@ Our framework includes a highly parallelized environment with domain randomizati
 
 ---
 
-## How to run - Quick TEST
+## How to run - For Quick TEST
 1. **Training** 
   PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP headless=True enable_livestream=True experiment=Capture-TEST
 
@@ -43,7 +43,7 @@ For real-world deployment, The Kingfisher ASV with a catamaran design, 1.35m lon
 
 | ASV in Isaac Environment | ASV in Real Environment |
 | :-: | :-: |
-| <img src="omniisaacgymenvs/images/ASV_isaac.png" width="300"/> | <img src="omniisaacgymenvs/images/ASV_real.png" width="300"/> |
+| <img src="omniisaacgymenvs/images/ASV_isaac.png"> | <img src="omniisaacgymenvs/images/ASV_real.png"> |
 
 ---
 ## Installation
