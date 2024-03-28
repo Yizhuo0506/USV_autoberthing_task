@@ -1,4 +1,4 @@
-# Reinforcement Learning Framework for Autonomous Surface Vehicle (ASV)
+# Reinforcement Learning Framework for Autonomous Surface Vehicles (ASV)
 
 ## About this repository
 
