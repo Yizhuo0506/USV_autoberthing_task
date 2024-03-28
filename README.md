@@ -4,7 +4,7 @@
 
 This repository contains the implementation and simulation environment used in the research paper "Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture." It extends the RANS (Reinforcement Learning Autonomous Navigating Systems) (https://github.com/elharirymatteo/RANS/tree/main) framework, integrating buoyancy and hydrodynamics models for efficient ASV training and operation.
 
-Our framework includes a highly parallelized environment with domain randomization and system identification techniques to bridge the sim-to-real gap for ASV applications. This repository aims to support ASV autonomy, particularly for tasks such as floating waste capture, contributing to environmental conservation efforts.
+Our framework includes a highly parallelized environment with domain randomization and system identification techniques to bridge the sim-to-real gap for ASV applications. This repository aims to support ASV autonomy, particularly for tasks such as floating waste capture and contributing to environmental conservation efforts.
 
 | Without Water Visualization | With Water Visualization |
 | :-: | :-: |
@@ -22,7 +22,7 @@ Our framework includes a highly parallelized environment with domain randomizati
 
 ## Task Description - Capture + @
 
-Currently we provide main task capture, which was highlighted in the paper, with minor tasks GoToPose, KeepXY, TrackXYVelocity, TrackXYOVelocity could be run with minor update as well. :
+Currently, we provide main task capture, which was highlighted in the paper, with minor tasks GoToPose, KeepXY, TrackXYVelocity, and TrackXYOVelocity, which could be run with minor updates as well. :
 
 1. **Capture Task for ASV:**
    The "Capture" task is formulated to simulate the activity of an ASV in pursuing and collecting water floating waste autonomously in a two-dimensional space. The ASV must effectively navigate towards a predefined target, and capture it by passing over the target with precision.
@@ -30,16 +30,16 @@ Currently we provide main task capture, which was highlighted in the paper, with
    Successful capture is defined by the ASV's alignment and transit over the target with a maximum deviation of 0.3 meters(0.1 in training) from its center of mass to the target. The test environment is obstacle-free, with a realistic operational range of 10 meters and a field of view restricted to 90 degrees, mirroring the potential future use of onboard cameras for target detection.
 
 2. **Further possible tasks:**
-   These tasks are providing additional training scenarios for the ASV that can be utilized with minimal adjustments:
+   These tasks provide additional training scenarios for the ASV that can be utilized with minimal adjustments:
    
    The minor tasks defined are:
-   - **GoToPose:** This task focuses on position-attitude control where the ASV must navigate to a specific location and orientation in the two-dimensional space.
-   - **KeepXY:** This task, ASV is required to maintain its position within a specified XY coordinate against disturbances.
+   - **GoToPose:** This task focuses on position-attitude control, where the ASV must navigate to a specific location and orientation in the two-dimensional space.
+   - **KeepXY:** In This task, the ASV is required to maintain its position within a specified XY coordinate against disturbances.
    - **TrackXYVelocity** This task challenges the ASV to match and maintain a set linear velocity along the XY plane.
    - **TrackXYOVelocity** An extension of the "TrackXYVelocity" task, this scenario additionally incorporates angular velocity tracking.
 
 #### ASV Configuration
-For real-world deployment, The Kingfisher ASV with a catamaran design, 1.35m long and 0.98m wide, weighing 35.96kg was used. It's powered by two hull-mounted thrusters, controlled at a frequency of at least 10 Hz. Processing is handled by an NVIDIA Jetson Xavier, and energy is supplied by a 22 Ah 4-cell LiPo battery. Localization uses an SBG Ellipse-D IMU and RTK GPS, providing high precision in position (0.02m), velocity (0.03m/s), and heading (0.5°). Sensors like cameras and lasers were present but not utilized for these tests. Training environment mimics the sensor noise.
+For real-world deployment, The Kingfisher ASV with a catamaran design, 1.35m long and 0.98m wide, weighing 35.96kg was used. It's powered by two hull-mounted thrusters, controlled at a frequency of at least 10 Hz. Processing is handled by an NVIDIA Jetson Xavier, and energy is supplied by a 22 Ah 4-cell LiPo battery. Localization uses an SBG Ellipse-D IMU and RTK GPS, providing high precision in position (0.02m), velocity (0.03m/s), and heading (0.5°). Sensors like cameras and lasers were present but not utilized for these tests. The training environment mimics the sensor noise.
 
 | ASV in Isaac Environment | ASV in Real Environment |
 | :-: | :-: |
@@ -63,7 +63,7 @@ git clone https://github.com/JunghwanRo/RANS-ASV-IROS2024.git
 
 Once cloned, locate the [python executable in Isaac Sim](https://docs.omniverse.nvidia.com/app_isaacsim/app_isaacsim/install_python.html). By default, this should be `python.sh`. We will refer to this path as `PYTHON_PATH`.
 
-To set a `PYTHON_PATH` variable in the terminal that links to the python executable, we can run a command that resembles the following. Make sure to update the paths to your local path.
+To set a `PYTHON_PATH` variable in the terminal that links to the Python executable, we can run a command that resembles the following. Make sure to update the paths to your local path.
 
 ```
 For Linux: alias PYTHON_PATH=~/.local/share/ov/pkg/isaac_sim-*/python.sh
@@ -71,7 +71,7 @@ For Windows: doskey PYTHON_PATH=C:\Users\user\AppData\Local\ov\pkg\isaac_sim-*\p
 For IsaacSim Docker: alias PYTHON_PATH=/isaac-sim/python.sh
 ```
 
-Install `omniisaacgymenvs` as a python module for `PYTHON_PATH`:
+Install `omniisaacgymenvs` as a Python module for `PYTHON_PATH`:
 
 ```bash
 PYTHON_PATH -m pip install -e .
@@ -85,7 +85,7 @@ To install the appropriate version of rl-games, clone this repository:
 ```bash
 git clone https://github.com/AntoineRichard/rl_games
 ```
-Make sure to install the rl_gamers library under the OmniverseIsaacGym dependec:
+Make sure to install the rl_gamers library under the OmniverseIsaacGym dependence:
 ```
 PYTHON_PATH -m pip install rl_games .
 ```
@@ -104,7 +104,7 @@ To train your first policy, run:
 PYTHON_PATH scripts/rlgames_train.py task=USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST train=USV/USV_PPOcontinuous_MLP
 ```
 
-You should see an Isaac Sim window pop up. Once Isaac Sim initialization completes, the scene will be constructed and simulation will start running automatically. The process will terminate once training finishes.
+You should see an Isaac Sim window pop up. Once Isaac Sim's initialization is complete, the scene will be constructed, and the simulation will start running automatically. The process will terminate once training finishes.
 
 Note that by default, we show a Viewport window with rendering, which slows down training. You can choose to close the Viewport window during training for better performance. The Viewport window can be re-enabled by selecting `Window > Viewport` from the top menu bar.
 
@@ -129,7 +129,7 @@ If you want to activate water visualization, you can activate it in the config .
 <summary><span style="font-size: 1.3em; font-weight: bold;">Loading trained models (or checkpoints)</span></summary>
 
 Checkpoints are saved in the folder `runs/EXPERIMENT_NAME/nn` where `EXPERIMENT_NAME` 
-defaults to the task name, but can also be overridden via the `experiment` argument.
+defaults to the task name but can also be overridden via the `experiment` argument.
 
 To load a trained checkpoint and continue training, use the `checkpoint` argument:
 
@@ -178,13 +178,13 @@ This script creates an instance of the PPO runner in `rl_games` and automaticall
 
 <details>
 <summary><span style="font-size: 1.3em; font-weight: bold;">Train on multiple GPUs</span></summary>
-Lastly, we provide a multi-threaded training script that executes the RL policy on a separate thread than the main thread used for simulation and rendering:
+Lastly, we provide a multi-threaded training script that executes the RL policy on a separate thread from the main thread used for simulation and rendering:
 
 ```bash
 PYTHON_PATH scripts/rlgames_train_mt.py USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST
 ```
 
-This script uses the same RL Games PPO policy as the above, but runs the RL loop on a new thread. Communication between the RL thread and the main thread happens on threaded Queues. Simulation will start automatically, but the script will **not** exit when training terminates, except when running in headless mode. Simulation will stop when training completes or can be stopped by clicking on the Stop button in the UI. Training can be launched again by clicking on the Play button. Similarly, if running inference with `test=True checkpoint=<path/to/checkpoint>`, simulation will run until the Stop button is clicked, or the script will run indefinitely until the process is terminated.
+This script uses the same RL Games PPO policy as the above but runs the RL loop on a new thread. Communication between the RL thread and the main thread happens on threaded Queues. The simulation will start automatically, but the script will **not** exit when training terminates, except when running in headless mode. Simulation will stop when training completes or can be stopped by clicking on the Stop button in the UI. Training can be launched again by clicking on the Play button. Similarly, if running inference with `test=True checkpoint=<path/to/checkpoint>`, simulation will run until the Stop button is clicked, or the script will run indefinitely until the process is terminated.
 </details>
 
 <details>
@@ -194,10 +194,10 @@ We use [Hydra](https://hydra.cc/docs/intro/) to manage the config.
  
 Common arguments for the training scripts are:
 
-* `task=TASK` - Selects which task to use. Any of `USV_Virtual_CaptureXY`, `USV_Virtual_GoToPose`, `USV_Virtual_TrackXYVelocity`, `USV_Virtual_TrackXYOVelocity`, (these correspond to the config for each environment in the folder `omniisaacgymenvs/cfg/task/USV`)
-* `train=TRAIN` - Selects which training config to use. Will automatically default to the correct config for the environment (ie. `<TASK>PPO`).
+* `task=TASK` - Select which task to use. Any of `USV_Virtual_CaptureXY`, `USV_Virtual_GoToPose`, `USV_Virtual_TrackXYVelocity`, `USV_Virtual_TrackXYOVelocity`, (these correspond to the config for each environment in the folder `omniisaacgymenvs/cfg/task/USV`)
+* `train=TRAIN` - Select which training config to use. Will automatically default to the correct config for the environment (ie. `<TASK>PPO`).
 * `num_envs=NUM_ENVS` - Selects the number of environments to use (overriding the default number of environments set in the task config).
-* `seed=SEED` - Sets a seed value for randomization, and overrides the default seed in the task config
+* `seed=SEED` - Sets a seed value for randomization and overrides the default seed in the task config
 * `pipeline=PIPELINE` - Which API pipeline to use. Defaults to `gpu`, can also set to `cpu`. When using the `gpu` pipeline, all data stays on the GPU. When using the `cpu` pipeline, simulation can run on either CPU or GPU, depending on the `sim_device` setting, but a copy of the data is always made on the CPU at every step.
 * `sim_device=SIM_DEVICE` - Device used for physics simulation. Set to `gpu` (default) to use GPU and to `cpu` for CPU.
 * `device_id=DEVICE_ID` - Device ID for GPU to use for simulation and task. Defaults to `0`. This parameter will only be used if simulation runs on GPU.
@@ -208,17 +208,17 @@ Common arguments for the training scripts are:
 * `experiment=EXPERIMENT` - Sets the name of the experiment.
 * `max_iterations=MAX_ITERATIONS` - Sets how many iterations to run for. Reasonable defaults are provided for the provided environments.
 
-Hydra also allows setting variables inside config files directly as command line arguments. As an example, to set the minibatch size for a rl_games training run, you can use `train.params.config.minibatch_size=64`. Similarly, variables in task configs can also be set. For example, `task.env.episodeLength=100`.
+Hydra also allows setting variables inside config files directly as command-line arguments. For example, to set the minibatch size for an rl_games training run, you can use `train.params.config.minibatch_size=64`. Similarly, variables in task configs can also be set. For example, `task.env.episodeLength=100`.
 
 #### Hydra Notes
 
 Default values for each of these are found in the `omniisaacgymenvs/cfg/config.yaml` file.
 
-The way that the `task` and `train` portions of the config works are through the use of config groups. 
+The way that the `task` and `train` portions of the config work is through the use of config groups. 
 You can learn more about how these work [here](https://hydra.cc/docs/tutorials/structured_config/config_groups/)
 The actual configs for `task` are in `omniisaacgymenvs/cfg/task/<TASK>.yaml` and for `train` in `omniisaacgymenvs/cfg/train/<TASK>PPO.yaml`. 
 
-In some places in the config you will find other variables referenced (for example,
+In some places in the config, you will find other variables referenced (for example,
  `num_actors: ${....task.env.numEnvs}`). Each `.` represents going one level up in the config hierarchy.
  This is documented fully [here](https://omegaconf.readthedocs.io/en/latest/usage.html#variable-interpolation).
 
