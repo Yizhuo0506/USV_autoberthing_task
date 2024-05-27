@@ -13,7 +13,7 @@ env:
   action_mode: Continuous
   numQuantizedActions: 1
   horizon_length: 16
-  waterVisualization: True
+  waterVisualization: False
 
   observation_frame: "local"
 

@@ -36,6 +36,7 @@ from omni.isaac.core.utils.stage import add_reference_to_stage
 import numpy as np
 import torch
 import carb
+import os
 
 
 class Heron(Robot):
@@ -51,7 +52,7 @@ class Heron(Robot):
     ) -> None:
         """[summary]"""
 
-        self._usd_path = "/home/junghwan/RANS/omniisaacgymenvs/robots/usd/heron.usd"
+        self._usd_path = os.path.join(os.path.dirname(__file__), "../../robots/usd/heron.usd")
         self._name = name
 
         if self._usd_path is None:

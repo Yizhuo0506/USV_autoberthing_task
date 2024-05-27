@@ -2,7 +2,7 @@
 
 # Set the base path for the script location
 PYTHON_PATH=~/.local/share/ov/pkg/isaac_sim-2022.2.1/python.sh
-BASE_PATH="/home/junghwan/RANS/omniisaacgymenvs"
+BASE_PATH="$HOME/RANS-ASV-IROS2024/omniisaacgymenvs"
 
 # Function to run training
 run_training() {

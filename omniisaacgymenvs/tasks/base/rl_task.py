@@ -30,6 +30,7 @@
 from abc import abstractmethod
 import numpy as np
 import torch
+import os
 from gym import spaces
 from omni.isaac.core.tasks import BaseTask
 from omni.isaac.core.utils.types import ArticulationAction
@@ -71,16 +72,12 @@ class RLTask(BaseTask):
         self.randomize_actions = False
         self.randomize_observations = False
 
-        self.water_visualization = self._cfg["task"]["env"].get(
-            "waterVisualization", False
-        )
+        self.water_visualization = self._cfg["task"]["env"].get("waterVisualization", False)
         self.clip_obs = self._cfg["task"]["env"].get("clipObservations", np.Inf)
         self.clip_actions = self._cfg["task"]["env"].get("clipActions", np.Inf)
         self.rl_device = self._cfg.get("rl_device", "cuda:0")
 
-        self.control_frequency_inv = self._cfg["task"]["env"].get(
-            "controlFrequencyInv", 1
-        )
+        self.control_frequency_inv = self._cfg["task"]["env"].get("controlFrequencyInv", 1)
 
         print("RL device: ", self.rl_device)
 
@@ -94,7 +91,8 @@ class RLTask(BaseTask):
         # initialize data spaces (defaults to gym.Box)
         if not hasattr(self, "action_space"):
             self.action_space = spaces.Box(
-                np.ones(self.num_actions) * -1.0, np.ones(self.num_actions) * 1.0
+                np.ones(self.num_actions) * -1.0,
+                np.ones(self.num_actions) * 1.0,
             )
         if not hasattr(self, "observation_space"):
             self.observation_space = spaces.Box(
@@ -103,7 +101,8 @@ class RLTask(BaseTask):
             )
         if not hasattr(self, "state_space"):
             self.state_space = spaces.Box(
-                np.ones(self.num_states) * -np.Inf, np.ones(self.num_states) * np.Inf
+                np.ones(self.num_states) * -np.Inf,
+                np.ones(self.num_states) * np.Inf,
             )
 
         self._cloner = GridCloner(spacing=self._env_spacing)
@@ -122,17 +121,13 @@ class RLTask(BaseTask):
             dtype=torch.float,
         )
         self.states_buf = torch.zeros(
-            (self._num_envs, self.num_states), device=self._device, dtype=torch.float
+            (self._num_envs, self.num_states),
+            device=self._device,
+            dtype=torch.float,
         )
-        self.rew_buf = torch.zeros(
-            self._num_envs, device=self._device, dtype=torch.float
-        )
-        self.reset_buf = torch.ones(
-            self._num_envs, device=self._device, dtype=torch.long
-        )
-        self.progress_buf = torch.zeros(
-            self._num_envs, device=self._device, dtype=torch.long
-        )
+        self.rew_buf = torch.zeros(self._num_envs, device=self._device, dtype=torch.float)
+        self.reset_buf = torch.ones(self._num_envs, device=self._device, dtype=torch.long)
+        self.progress_buf = torch.zeros(self._num_envs, device=self._device, dtype=torch.long)
         self.extras = {}
 
     def set_up_scene(self, scene, replicate_physics=True) -> None:
@@ -157,7 +152,7 @@ class RLTask(BaseTask):
             from omni.isaac.core.utils.stage import add_reference_to_stage
 
             add_reference_to_stage(
-                "/home/junghwan/RANS/omniisaacgymenvs/robots/usd/water.usd",
+                os.path.join(os.path.dirname(__file__), "../../robots/usd/water.usd"),
                 "/World/Water",
             )
         prim_paths = self._cloner.generate_paths("/World/envs/env", self._num_envs)
@@ -166,24 +161,18 @@ class RLTask(BaseTask):
             prim_paths=prim_paths,
             replicate_physics=replicate_physics,
         )
-        self._env_pos = torch.tensor(
-            np.array(self._env_pos), device=self._device, dtype=torch.float
-        )
+        self._env_pos = torch.tensor(np.array(self._env_pos), device=self._device, dtype=torch.float)
         self._cloner.filter_collisions(
             self._env._world.get_physics_context().prim_path,
             "/World/collisions",
             prim_paths,
             collision_filter_global_paths,
         )
-        self.set_initial_camera_params(
-            camera_position=[10, 10, 3], camera_target=[0, 0, 0]
-        )
+        self.set_initial_camera_params(camera_position=[10, 10, 3], camera_target=[0, 0, 0])
         if self._sim_config.task_config["sim"].get("add_distant_light", True):
             create_distant_light()
 
-    def set_initial_camera_params(
-        self, camera_position=[10, 10, 3], camera_target=[0, 0, 0]
-    ):
+    def set_initial_camera_params(self, camera_position=[10, 10, 3], camera_target=[0, 0, 0]):
         if self._env._render:
             viewport_api_2 = get_viewport_from_window_name("Viewport")
             viewport_api_2.set_active_camera("/OmniverseKit_Persp")
@@ -193,7 +182,8 @@ class RLTask(BaseTask):
                 True,
             )
             camera_state.set_target_world(
-                Gf.Vec3d(camera_target[0], camera_target[1], camera_target[2]), True
+                Gf.Vec3d(camera_target[0], camera_target[1], camera_target[2]),
+                True,
             )
 
     @property
