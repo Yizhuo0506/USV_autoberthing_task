@@ -403,19 +403,21 @@ class Penalties:
     def __post_init__(self):
         """
         Converts the string functions into python callable functions."""
-        self.penalize_linear_velocities_fn = eval(self.penalize_linear_velocities_fn)
-        self.penalize_angular_velocities_fn = eval(self.penalize_angular_velocities_fn)
-        self.penalize_angular_velocities_variation_fn = eval(
-            self.penalize_angular_velocities_variation_fn
-        )
-        self.penalize_energy_fn = eval(self.penalize_energy_fn)
-        self.penalize_action_variation_fn = eval(self.penalize_action_variation_fn)
+        # Ensure torch and coefficient variables are available in the eval context
+        import torch
+        
+        # Create lambda functions with proper variable substitution
+        self.penalize_linear_velocities_fn = lambda x, step: -torch.norm(x, dim=-1) * self.penalize_linear_velocities_c1 + self.penalize_linear_velocities_c2
+        self.penalize_angular_velocities_fn = lambda x, step: -torch.abs(x) * self.penalize_angular_velocities_c1 + self.penalize_angular_velocities_c2
+        self.penalize_angular_velocities_variation_fn = lambda x, step: torch.exp(self.penalize_angular_velocities_variation_c1 * torch.abs(x)) - 1.0
+        self.penalize_energy_fn = lambda x, step: -torch.sum(x**2) * self.penalize_energy_c1 + self.penalize_energy_c2
+        self.penalize_action_variation_fn = lambda x, step: torch.exp(self.penalize_action_variation_c1 * torch.abs(x)) - 1.0
 
     def compute_penalty(
         self,
         state: torch.Tensor,
         actions: torch.Tensor,
-        step: int,
+        step: float,
     ) -> torch.Tensor:
         """
         Computes the penalties for the task."""

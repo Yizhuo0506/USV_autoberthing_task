@@ -1,0 +1,322 @@
+# USV Virtual Berth Task Configuration
+# 用于无人船自主停泊任务的配置文件
+
+# 继承基础配置
+defaults:
+  - /task/USV/USV_Virtual_GoToXY
+  - _self_
+
+# 任务名称和实验标识
+name: USVVirtual
+physics_engine: ${physics_engine}
+experiment: USV_Virtual_Berth
+
+env:
+  # 并行规模与节拍
+  numEnvs: ${resolve_default:16,${num_envs}}
+  envSpacing: 12
+  maxEpisodeLength: 3000
+  horizon_length: 32
+  controlFrequencyInv: 5
+
+  # 调试设置
+  enableDebugVis: False
+  debug_berth: False
+  debug_rewards: true  # 奖励调试，看分项趋势
+  observation_frame: "local"
+
+  # 观测/动作裁剪
+  clipObservations: {state: 8.0}
+  clipActions: 1.0
+  action_mode: Continuous
+  numQuantizedActions: 1
+
+  # Split the maximum amount of thrust across all thrusters.
+  split_thrust: False
+
+  # 扰动设置
+  wind:
+  water_current:
+    use_water_current: False
+    flow_velocity: [0.0, 0.0, 0.0]
+
+  # Action-safety and current-compensation gains
+  action_safety:
+    g_throttle: 0.60         # 危险时适度降油门，但最低仍保留 40%（不会太慢）
+    g_diff: 0.90             # 危险时优先"少转"，减少贴墙刮行
+    g_bias: 0.30
+    back_wall_buffer: 0.12
+    back_wall_push: 0.35
+    outer_yaw_gain: 0.18
+    current_heading_gain: 0.70
+    lateral_vel_gain: 0.60   # ← 新增：侧向速度纠偏强度
+    entrance_guard: 0.05     # ← 新增：开口内侧保护带，避免门口被误触发
+
+  # ILOS gains (set ki=0 to disable integral initially)
+  ilos:
+    kp: 1.0                  # 略柔一点，减少抖
+    ki: 0.02                 # 给少量积分，慢慢消除稳态偏差（不至于过饱和）
+  disturbances:
+    forces:
+      use_force_disturbance: True
+      use_constant_force: True
+      use_sinusoidal_force: True
+      force_const_min: 0.0
+      force_const_max: 2.5
+      force_sin_min: 0.0
+      force_sin_max: 2.5
+      force_min_freq: 0.25
+      force_max_freq: 3.0
+      force_min_shift: 0.0
+      force_max_shift: 3.0
+    torques:
+      use_torque_disturbance: True
+      use_constant_torque: True
+      use_sinusoidal_torque: True
+      torque_const_min: 0.0
+      torque_const_max: 1.0
+      torque_sin_min: 0.0
+      torque_sin_max: 1.0
+      torque_min_freq: 0.25
+      torque_max_freq: 3
+      torque_min_shift: 0.0
+      torque_max_shift: 3.0
+    observations:
+      add_noise_on_pos: True
+      position_noise_min: -0.03
+      position_noise_max:  0.03
+      add_noise_on_vel: True
+      velocity_noise_min: -0.03
+      velocity_noise_max:  0.03
+      add_noise_on_heading: True
+      heading_noise_min: -0.025
+      heading_noise_max:  0.025
+    actions:
+      add_noise_on_act: True
+      min_action_noise: -0.05
+      max_action_noise:  0.05
+    mass:
+      add_mass_disturbances: True
+      min_mass: 34.96
+      max_mass: 36.96
+      CoM_max_displacement: 0.0
+      base_mass: 35.96
+    drag:
+      use_drag_randomization: True
+      u_linear_rand: 0.1
+      v_linear_rand: 0.1
+      w_linear_rand: 0.0
+      p_linear_rand: 0.0
+      q_linear_rand: 0.0
+      r_linear_rand: 0.1
+      u_quad_rand: 0.1
+      v_quad_rand: 0.1
+      w_quad_rand: 0.0
+      p_quad_rand: 0.0
+      q_quad_rand: 0.0
+      r_quad_rand: 0.1
+    thruster:
+      use_thruster_randomization: True
+      thruster_rand: 0.1
+      use_separate_randomization: False
+      left_rand: 0.1
+      right_rand: 0.1
+
+  # 靠泊：朝向策略
+  berth:
+   # size: { L: 2.6, W: 1.8 } 泊位尺寸
+    yaw_mode: seeded        # once | episode | success | seeded | fixed
+    seed: 42
+    yaw_hold_k: 3           # 每个 env 保持 K 个 episode 再换；想每回合换设为 1
+    eval_lock: false
+    fixed_yaw_deg: null     # 仅在 yaw_mode=fixed 时生效；可给 [0,15,30,...]
+
+  # 出生（门外扇形）/容差/课程入口
+  min_spawn_dist: 8.0      # 与门线的外推距离范围
+  max_spawn_dist: 25.0
+  heading_err_deg: 20.0     # 初始朝向相对"指向库内"的扰动
+  lateral_span: 0.9         # 横向带宽：半门宽的比例（0~1）
+  clearance: 1.0            # 门外安全间隙（避免出生即贴边）
+
+  # 任务参数（Berth）
+  task_parameters:
+    name: GoToXY
+    position_tolerance: 0.30         # 作为默认/回落值
+    position_tolerance_x: 0.30       # 横向容差（沿墙）
+    position_tolerance_y: 0.30       # 纵向容差（进出）
+    kill_after_n_steps_in_tolerance: 25  # 停在容差内 N 步判定成功
+    yaw_tolerance_deg: 12.0        # 朝向容差
+    velocity_tolerance: 0.12       # 速度阈值
+    kill_dist: 70.0                     # 远离过多判失败
+    time_reward: 0.0                     # 不再用 GoToXY 的逐步时间惩罚
+
+  # === 启用改进版奖励（默认走 improved；临时想对比旧版就改 false）===
+  berthing_reward:
+    use_improved: true
+
+  # === 事件幅值（仅对旧版 compute_berthing_reward 生效；训练期建议小标度）===
+  reward_parameters:
+    name: GoToXY
+    reward_mode: linear
+    exponential_reward_coeff: 0.0
+    gate_bonus: 2.0          # 旧版：穿门一次性奖励
+    dwell_bonus: 0.002       # 旧版：门内每步微奖
+    success_bonus: 10.0      # 旧版：成功大奖励（原来 50.0）
+    fail_penalty: 5.0        # 旧版：失败惩罚（原来 20.0）
+    success_hold_gain: 5.0   # 新版奖励-原硬编码≈10.0，这里先减半，更稳
+    mouth_fail_hits: 3       # 新增：门口侧墙"几何越界"的连击触发帧数
+
+  # === 改进版奖励的权重（新增这些键，给 improved 使用）===
+  berthing_reward_weights:
+    # 旧版键保留（distance_outside/distance_inside/...）以便随时切回；在其下方追加这组新键
+    distance: 3.0      # 几何：门外靠门/门内靠中心，范围约 [-1,1]
+    heading:  2.0      # 门内对齐航向，范围 [0,1]
+    velocity: 1.5      # 自适应速度条目，范围约 [-5,2] 但合成前有权重
+    stability: 1.0     # 动作平滑 + 角速度稳定，范围 [0,1]
+    collision: 10.0    # 软边"撞墙"项，范围约 [-1,0]，乘 10 后为 [-10,0]
+    danger: 0.6         # 危险度软约束权重（小权重）
+    danger_margin: 0.25 # 安全带略放宽，减少"门口卡分"的情况
+    center_progress: 1.0  # 门内向中心的进度差权重（可调）
+    
+    # 旧版键保留（distance_outside/distance_inside/...）以便随时切回
+    distance_outside:   1.0   # 门外：鼓励靠近门线
+    distance_inside:    5.0   # 门内：鼓励靠近泊位中心
+    yaw_alignment:      1.5   # 与门向对齐
+    lateral_deviation:  1.0   # 门内走廊保持横向偏差小
+    velocity_inward:    0.5   # 径向速度<0奖励（朝门/中心）
+    velocity_brake:     2.0   # 进门后减速
+    barrier_penalty:    6.0   # 撞墙惩罚（虚墙）
+    time_penalty:       0.01  # 时间惩罚（ GoToXY 的 -0.1）
+    soft_margin:        0.20  
+    barrier_extra:      1.0   # 碰墙惩罚倍率，可不配，默认 1.0
+
+  # ===（可选）总奖励合成权重 + 课程化（calculate_metrics 已支持）===
+  reward_weights:
+    base: 0.0                 # GoToXY 的基础奖励，靠泊任务里通常不需要
+    berth: 1.0                # 靠泊 shaping 主体
+    penalty_start: 0.0        # 惩罚项（能耗/动作抖动）先关
+    penalty_final: 0.25       # 训练到后段再慢慢引入
+
+  penalties_parameters:
+    penalize_energy: True
+    penalize_energy_c1: 0.01
+    penalize_energy_c2: 0.00
+    penalize_angular_velocities_variation: True
+    penalize_action_variation: True
+    penalize_angular_velocities_variation_fn: "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 0.01"
+    penalize_action_variation_fn:           "lambda x,step: (torch.exp(-0.033 * torch.abs(x)) - 1.0) * 0.01"
+
+  platform:
+    randomization:
+      random_permutation: False
+      random_offset: False
+      randomize_thruster_position: False
+      min_random_radius: 0.125
+      max_random_radius: 0.5
+      random_theta: 0.39269908169872414
+      randomize_thrust_force: False
+      min_thrust_force: 0.5
+      max_thrust_force: 1.0
+      kill_thrusters: False
+      max_thruster_kill: 2
+    core:
+      mass: 10.92
+      CoM: [0,0,0]
+      radius: 0.31
+      shape: "sphere"
+      refinement: 2
+    configuration:
+      use_four_configurations: False
+      num_anchors: 1
+      offset: 0.75839816339
+      thrust_force: 1.0
+      visualize: False
+      save_path: "config.png"
+
+sim:
+  dt: 0.02
+  use_gpu_pipeline: ${eq:${pipeline},"gpu"}
+  gravity: [0.0, 0.0, -9.81]
+  add_ground_plane: False
+  add_distant_light: True
+  use_flatcache: True
+  enable_scene_query_support: False
+  enable_cameras: False
+  disable_contact_processing: False
+
+  physx:
+    worker_thread_count: ${num_threads}
+    solver_type: ${solver_type}
+    use_gpu: ${eq:${sim_device},"gpu"}
+    solver_position_iteration_count: 6
+    solver_velocity_iteration_count: 1
+    contact_offset: 0.02
+    rest_offset: 0.001
+    bounce_threshold_velocity: 0.2
+    max_depenetration_velocity: 1000.0
+    friction_offset_threshold: 0.04
+    friction_correlation_distance: 0.025
+    enable_sleeping: True
+    enable_stabilization: False
+    gpu_max_rigid_contact_count: 524288
+    gpu_max_rigid_patch_count: 81920
+    gpu_found_lost_pairs_capacity: 1024
+    gpu_found_lost_aggregate_pairs_capacity: 262144
+    gpu_total_aggregate_pairs_capacity: 1024
+    gpu_max_soft_body_contacts: 1048576
+    gpu_max_particle_contacts: 1048576
+    gpu_heap_capacity: 67108864
+    gpu_temp_buffer_capacity: 16777216
+    gpu_max_num_partitions: 8
+
+  USV:
+    override_usd_defaults: False
+    enable_self_collisions: False
+    enable_gyroscopic_forces: True
+    solver_position_iteration_count: 6
+    solver_velocity_iteration_count: 1
+    sleep_threshold: 0.005
+    stabilization_threshold: 0.001
+    density: -1
+    max_depenetration_velocity: 1000.0
+
+dynamics:
+  thrusters:
+    cmd_lower_range: -1.0
+    cmd_upper_range: 1.0
+    timeConstant: 0.05
+    interpolation:
+      numberOfPointsForInterpolation: 1000
+      interpolationPointsFromRealDataLeft:  [-3.8,-3.8,-3.6,-3.6,-1.6,0,0,0,0,0,0,0,0,0,0,4,10,15,21,23,22]
+      interpolationPointsFromRealDataRight: [-5.0,-5.0,-5.0,-4.6,-2.2,0,0,0,0,0,0,0,0,0,0,4.6,10,17,24,24,23]
+    leastSquareMethod:
+      neg_cmd_coeff: [88.61013986, 163.99545455, 76.81641608, 11.9476958, 0.20374615]
+      pos_cmd_coeff: [-197.800699, 334.050699, -97.6197902, 7.59341259, -0.0301846154]
+
+  hydrodynamics:
+    squared_drag_coefficients: [0, 0, 0, 0, 0, 0]
+    linear_damping: [0, 47.39328132, 100, 13, 13, 0.82985084]
+    quadratic_damping: [17.257603, 8.2851636, 10, 5, 5, 17.33600724]
+    linear_damping_forward_speed: [0.0, 0.0, 0.0, 0.0, 0.0, 0.0]
+    offset_linear_damping: 0.0
+    offset_lin_forward_damping_speed: 0.0
+    offset_nonlin_damping: 0.0
+    scaling_damping: 1.0
+    offset_added_mass: 0.0
+    scaling_added_mass: 1.0
+
+  hydrostatics:
+    average_hydrostatics_force_value: 275
+    amplify_torque: 1.0
+    material_density: 133
+    water_density: 1000
+    mass: 35.96
+    box_width: 1.0
+    box_length: 1.3
+    waterplane_area: 0.233333
+    heron_zero_height: 0.24
+
+  acceleration:
+    alpha: 0.3
+    last_time: -10.0
+

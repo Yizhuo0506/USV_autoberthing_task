@@ -1,15 +1,17 @@
 # used to create the object
 name: USVVirtual
 
-physics_engine: ${..physics_engine}
+physics_engine: ${physics_engine}
 experiment: USV_Virtual_GoToXY
 
 # if given, will override the device setting in gym. 
 env:
-  numEnvs: ${resolve_default:16,${...num_envs}}
+  numEnvs: ${resolve_default:16,${num_envs}}
   envSpacing: 12 # default: 12
   maxEpisodeLength: 3000
   enableDebugVis: False
+  # 泊位坐标系统调试开关（建议默认关闭）
+  debug_berth: False
   action_mode: Continuous
   numQuantizedActions: 1
   horizon_length: 16
@@ -178,7 +180,7 @@ env:
 
 sim:
   dt: 0.02
-  use_gpu_pipeline: ${eq:${...pipeline},"gpu"}
+  use_gpu_pipeline: ${eq:${pipeline},"gpu"}
   gravity: [0.0, 0.0, -9.81] # gravity in m/s^2
   add_ground_plane: False
   add_distant_light: True
@@ -189,9 +191,9 @@ sim:
   disable_contact_processing: False
 
   physx:
-    worker_thread_count: ${....num_threads}
-    solver_type: ${....solver_type}
-    use_gpu: ${eq:${....sim_device},"gpu"} # set to False to run on CPU
+    worker_thread_count: ${num_threads}
+    solver_type: ${solver_type}
+    use_gpu: ${eq:${sim_device},"gpu"} # set to False to run on CPU
     solver_position_iteration_count: 6
     solver_velocity_iteration_count: 1
     contact_offset: 0.02

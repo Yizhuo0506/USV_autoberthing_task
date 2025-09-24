@@ -8,8 +8,10 @@ experiment: USV_Virtual_GoToPose
 env:
   numEnvs: ${resolve_default:1024,${...num_envs}}
   envSpacing: 12
-  maxEpisodeLength: 300
+  maxEpisodeLength: 3000
   enableDebugVis: False
+  # 泊位坐标系统调试开关（建议默认关闭）
+  debug_berth: False
   action_mode: Continuous
   numQuantizedActions: 1
   horizon_length: 16

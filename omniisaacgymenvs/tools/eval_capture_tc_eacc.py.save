@@ -1,0 +1,78 @@
+import hydra, torch, json, pathlib
+from omniisaacgymenvs.envs.vec_env_rlgames import VecEnvRLGames
+from omniisaacgymenvs.utils.task_util import initialize_task
+from omniisaacgymenvs.utils.hydra_cfg.reformat import omegaconf_to_dict
+
+
+DT          = 0.02          
+BINS        = [3, 6, 9]     
+EP_PER_BIN  = 1000          
+NUM_ENVS    = 256           
+
+
+@hydra.main(config_path="../cfg", config_name="config")
+def main(cfg):
+ 
+    cfg.task   = "USV/IROS2024/USV_Virtual_CaptureXY_SysID-TEST"
+    cfg.train  = "USV/USV_PPOcontinuous_MLP"
+    cfg.test   = True
+    cfg.headless = True
+    cfg.num_envs = NUM_ENVS
+
+ 
+    env = VecEnvRLGames(
+        headless=True,
+        sim_device=cfg.device_id,
+        enable_livestream=False,
+        enable_viewport=False,
+    )    task = initialize_task(cfg, env)   
+    device = task.device
+    policy = task.agent
+  
+    results = {d: [] for d in BINS}
+
+    for dist in BINS:
+        episodes = 0
+        while episodes < EP_PER_BIN:
+            # 固定目标在 dist 米处
+            task.targets[:, 0] = dist
+            task.reset()
+
+            running = torch.ones(NUM_ENVS, dtype=torch.bool, device=device)
+            energy  = torch.zeros(NUM_ENVS, device=device)
+            steps   = torch.zeros(NUM_ENVS, device=device)
+
+            while running.any():
+                obs = task.get_obs()
+                act = policy.get_action(obs)
+                task.apply_action(act)
+
+                vel = task.root_states[:, 7:10]
+                thrust = torch.abs(task.left_force)+torch.abs(task.right_force)
+                energy[running] += thrust[running] * torch.norm(vel[running], dim=1) * DT
+                steps[running]  += 1
+
+                task.simulate()              
+                running &= ~task.success     
+
+            for e, s in zip(energy.tolist(), steps.tolist()):
+                results[dist].append({
+                    "dist": dist,
+                    "Tc":   round(s*DT, 3),
+                    "Eacc": round(e, 1)
+                })
+
+            episodes += NUM_ENVS
+            print(f"[dist {dist} m] finished {episodes}/{EP_PER_BIN}")
+
+  
+    out = pathlib.Path("eval_Tc_Eacc.jsonl")
+    with out.open("w") as f:
+        for dist in BINS:
+            for row in results[dist]:
+                json.dump(row, f)
+                f.write("\n")
+    print(f"\nSaved results → {out.absolute()}")
+
+if __name__ == "__main__":
+    main()
