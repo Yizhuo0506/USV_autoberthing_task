@@ -11,6 +11,7 @@ This project is based on [JunghwanRo/RANS-ASV-IROS2024](https://github.com/Jungh
 > - training/eval scripts for berthing with current
 
 ### BibTeX
+This repository is a fork of JunghwanRo/RANS-ASV-IROS2024; all original code remains under the original LICENSE.
 ```bibtex
 @article{batista2024advancing,
   title={Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture},
