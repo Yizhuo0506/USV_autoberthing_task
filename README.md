@@ -38,7 +38,12 @@ This project is based on [JunghwanRo/RANS-ASV-IROS2024](https://github.com/Jungh
 
 ## Autonomous Berthing 
 - C-shaped rectangular berth built around the existing red target (berth center), with open front, back wall, and two side walls. Per-env independent visual geometry only (no collisions/forces), semi-transparent (alpha 0.25–0.4), does not affect USV dynamics.
-- Berth scales with boat size: L_berth = 1.60 × L_boat, W_berth = 1.50 × W_boat, wall_thickness = 0.10, wall_height = 1.0, z_base = 0.0. Random berth heading per episode; berth parameters are injected in set_targets().
+- Berth scales with boat size: L_berth = 1.60 × L_boat, W_berth = 1.50 × W_boat, wall_thickness = 0.10, wall_height = 1.0, z_base = 0.0. 
+- Per-env randomized berth pose: at each set_targets() we sample berth center & heading (env-local frame) and inject them into the task; the spawn of the vessel is outside the berth within a fan region.
+- Reward shaping (HighwayEnv-style inspirations):Distance & alignment rewards near the target red point (berth center proxy).
+Danger fields to the back/side walls (Safety-RL style), smooth penalties grow as distance shrinks.
+Small time penalty; penalties for excessive angular/linear rates; optional action-smoothness term.
+Soft gates for “entry → dwell near center with low velocity → success”.
 
 Quick commands:
 ```bash
@@ -285,23 +290,7 @@ PYTHON_PATH -m tensorboard.main --logdir runs/EXPERIMENT_NAME/summaries
 
 You can run (WandB)[https://wandb.ai/] with OmniIsaacGymEnvs by setting `wandb_activate=True` flag from the command line. You can set the group, name, entity, and project for the run by setting the `wandb_group`, `wandb_name`, `wandb_entity` and `wandb_project` arguments. Make sure you have WandB installed in the Isaac Sim Python executable with `PYTHON_PATH -m pip install wandb` before activating.
 
-## Citation 
-If you use the current repository in your work, we suggest citing the following papers:
 
-```bibtex
-@article{batista2024advancing,
-  title={Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture},
-  author={Batista, Luis F. W. and Ro, Junghwan and Richard, Antoine and Schroepfer, Pete and Hutchinson, Seth and Pradalier, Cedric},
-  journal={To be published},
-  year={2024}
-}
-
-@article{el2023rans,
-  title={RANS: Highly-Parallelised Simulator for Reinforcement Learning based Autonomous Navigating Spacecrafts},
-  author={El-Hariry, Matteo and Richard, Antoine and Olivares-Mendez, Miguel},
-  journal={arXiv preprint arXiv:2310.07393},
-  year={2023}
-}
 ```
 
 ## Directory Structure
