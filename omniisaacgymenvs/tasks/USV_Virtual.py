@@ -556,7 +556,7 @@ class USVVirtual(RLTask):
         quat[:, 0] = cy  # w
         quat[:, 3] = sy  # z
 
-        # 回填覆写，仅更新这些 env_ids
+        # 回填覆写
         root_pos_w[ids] = p_w
         root_rot_w[ids] = quat
         return root_pos_w, root_rot_w
@@ -798,7 +798,7 @@ class USVVirtual(RLTask):
         self.prev_d_center = torch.where(~outside, d_center, torch.zeros_like(d_center))   # ← 新增
         self.prev_outside = outside.clone()
 
-        # ---- 记录到 TensorBoard（仅在 debug 模式）----
+        # ---- 记录到 TensorBoard----
         if self._task_cfg["env"].get("debug_rewards", False):
             bm = self.extras.setdefault("berthing_metrics", {})
             # 注意要 .mean() 并在显卡上保持张量；rl-games会自己拿数值
@@ -1740,8 +1740,8 @@ class USVVirtual(RLTask):
             # 1.4 "中心点应在泊位原点"：把 (bc_env -> Berth) 应为 0
             bc_env = self.task.berth_center_xy_env[env_long]    # [k,2]
             zero_B = torch.bmm(R, torch.zeros(k,2,1, device=R.device)).squeeze(-1)
-            # 注：对任意点 p_env，p_B = R*(p_env - bc_env)。带入 p_env=bc_env 得 0。
-            # 这里就不重复计算了，只检查 R 是否数值稳定
+          
+            # 检查 R 是否数值稳定
             print(f"{t} k={k} | ortho_err={ortho_err:.2e} det_err={det_err:.2e} open_err={open_err:.2e}")
 
        
