@@ -4,13 +4,37 @@ This project is based on [JunghwanRo/RANS-ASV-IROS2024](https://github.com/Jungh
 
 ## About this repository
 
-This repository contains the implementation and simulation environment used in the research paper "Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture." It extends the RANS (Reinforcement Learning Autonomous Navigating Systems) (https://github.com/elharirymatteo/RANS/tree/main) framework, integrating buoyancy and hydrodynamics models for efficient ASV training and operation.
+> This repository is based on [JunghwanRo/RANS-ASV-IROS2024].
+> We modified it for USV autonomous berthing (Isaac Sim 2022.2.1), including:
+> - new task: USV_Virtual_Berth
+> - reward shaping & safety gates
+> - training/eval scripts for berthing with current
 
-Our framework includes a highly parallelized environment with domain randomization and system identification techniques to bridge the sim-to-real gap for ASV applications. This repository aims to support ASV autonomy, particularly for tasks such as floating waste capture and contributing to environmental conservation efforts.
+### BibTeX
+```bibtex
+@article{batista2024advancing,
+  title={Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture},
+  author={Batista, Luis F. W. and Ro, Junghwan and Richard, Antoine and Schroepfer, Pete and Hutchinson, Seth and Pradalier, Cedric},
+  journal={To be published},
+  year={2024}
+}
 
-| Without Water Visualization | With Water Visualization |
-| :-: | :-: |
-| ![WithoutWater_CaptureXY](omniisaacgymenvs/demos/WithoutWater_CaptureXY.gif) | ![WithWater_CaptureXY](omniisaacgymenvs/demos/WithWater_CaptureXY.gif) | 
+@article{el2023rans,
+  title={RANS: Highly-Parallelised Simulator for Reinforcement Learning based Autonomous Navigating Spacecrafts},
+  author={El-Hariry, Matteo and Richard, Antoine and Olivares-Mendez, Miguel},
+  journal={arXiv preprint arXiv:2310.07393},
+  year={2023}
+}
+
+@misc{highway-env,
+  author = {Leurent, Edouard},
+  title = {An Environment for Autonomous Driving Decision-Making},
+  year = {2018},
+  publisher = {GitHub},
+  journal = {GitHub repository},
+  howpublished = {\url{https://github.com/eleurent/highway-env}},
+}
+```
 
 ## Autonomous Berthing 
 - C-shaped rectangular berth built around the existing red target (berth center), with open front, back wall, and two side walls. Per-env independent visual geometry only (no collisions/forces), semi-transparent (alpha 0.25–0.4), does not affect USV dynamics.
