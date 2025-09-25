@@ -45,12 +45,11 @@ Danger fields to the back/side walls (Safety-RL style), smooth penalties grow as
 Small time penalty; penalties for excessive angular/linear rates; optional action-smoothness term.
 Soft gates for “entry → dwell near center with low velocity → success”.
 
-Quick commands:
+Quick commands（examples) :
 ```bash
 /isaac-sim/python.sh scripts/rlgames_train.py \
   task=USV/USV_Virtual_Berth train=USV/USV_PPOcontinuous_MLP \
   headless=True task.env.numEnvs=256 \
-  ++task.env.berthing_reward.use_improved=true
 
 /isaac-sim/python.sh scripts/rlgames_train.py \
   task=USV/USV_Virtual_Berth train=USV/USV_PPOcontinuous_MLP \
