@@ -1,4 +1,4 @@
-# Reinforcement Learning Framework for Autonomous Surface Vehicles (ASV)
+# Reinforcement Learning Framework for Autonomous Surface Vehicles (ASV) Berthing Task
 
 This project is based on [JunghwanRo/RANS-ASV-IROS2024](https://github.com/JunghwanRo/RANS-ASV-IROS2024). Modified by Yizhuo0506 for autonomous berthing tasks.
 
