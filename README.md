@@ -1,5 +1,7 @@
 # Reinforcement Learning Framework for Autonomous Surface Vehicles (ASV)
 
+This project is based on [JunghwanRo/RANS-ASV-IROS2024](https://github.com/JunghwanRo/RANS-ASV-IROS2024). Modified by Yizhuo0506 for autonomous berthing tasks.
+
 ## About this repository
 
 This repository contains the implementation and simulation environment used in the research paper "Advancing ASV Autonomy for Environmental Cleanup: A Deep Reinforcement Learning Framework for Floating Waste Capture." It extends the RANS (Reinforcement Learning Autonomous Navigating Systems) (https://github.com/elharirymatteo/RANS/tree/main) framework, integrating buoyancy and hydrodynamics models for efficient ASV training and operation.
@@ -9,6 +11,28 @@ Our framework includes a highly parallelized environment with domain randomizati
 | Without Water Visualization | With Water Visualization |
 | :-: | :-: |
 | ![WithoutWater_CaptureXY](omniisaacgymenvs/demos/WithoutWater_CaptureXY.gif) | ![WithWater_CaptureXY](omniisaacgymenvs/demos/WithWater_CaptureXY.gif) | 
+
+## Autonomous Berthing 
+- C-shaped rectangular berth built around the existing red target (berth center), with open front, back wall, and two side walls. Per-env independent visual geometry only (no collisions/forces), semi-transparent (alpha 0.25–0.4), does not affect USV dynamics.
+- Berth scales with boat size: L_berth = 1.60 × L_boat, W_berth = 1.50 × W_boat, wall_thickness = 0.10, wall_height = 1.0, z_base = 0.0. Random berth heading per episode; berth parameters are injected in set_targets().
+
+Quick commands:
+```bash
+/isaac-sim/python.sh scripts/rlgames_train.py \
+  task=USV/USV_Virtual_Berth train=USV/USV_PPOcontinuous_MLP \
+  headless=True task.env.numEnvs=256 \
+  ++task.env.berthing_reward.use_improved=true
+
+/isaac-sim/python.sh scripts/rlgames_train.py \
+  task=USV/USV_Virtual_Berth train=USV/USV_PPOcontinuous_MLP \
+  headless=True task.env.numEnvs=256 test=True \
+  checkpoint=runs/USV_Virtual_Berth/nn/last_USV_Virtual_Berth.pth
+```
+
+Hydrodynamics/flow:
+- `env.water_current.use_water_current: True|False`
+- `env.water_current.flow_velocity: [vx, vy, vz]`
+- Tune damping/added mass under `dynamics.hydrodynamics`.
 
 ---
 

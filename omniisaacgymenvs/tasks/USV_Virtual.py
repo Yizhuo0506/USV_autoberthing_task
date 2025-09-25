@@ -1432,7 +1432,7 @@ class USVVirtual(RLTask):
             entrance_guard = float(getattr(self, "as_entrance_guard", 0.10))
             mouth_outer = (yB > halfL) & (yB < (halfL + entrance_guard + 0.15))
 
-            # 与侧墙的口外邻近度 0..1（越靠近侧墙越大）
+            # 与侧墙的口外邻近度 
             tw = getattr(self.task, "berth_wall_t", torch.full_like(halfW, 0.10))
             inner = (halfW - tw).clamp(min=0.05)
             boat_half_w = 0.5 * float(self.box_width)
@@ -1471,7 +1471,7 @@ class USVVirtual(RLTask):
             low_throttle = (mid.abs() < 0.2)
             
             # ---- Basin spin gate: only stop turning when heading is already aligned ----
-            # 从当前 root_quats 计算船体 yaw（与 update_state 同公式）
+            # 从当前 root_quats 计算船体 yaw
             w, x, y, z = self.root_quats.unbind(dim=1)
             num = 2.0 * (w * z + x * y)
             den = 1.0 - 2.0 * (y * y + z * z)
@@ -1852,7 +1852,7 @@ class USVVirtual(RLTask):
         self.prev_speed[env_ids] = 0.0
         self.prev_actions[env_ids] = torch.zeros_like(self.prev_actions[env_ids])
 
-        # 重置进门事件状态（重要！）
+        # 重置进门事件状态
         # 因为出生在门外，重置时要把历史擦掉，不然"刚出生就被认作已在门内"
         if hasattr(self, "prev_outside"):
             self.prev_outside[env_ids] = True  # 新生时默认在门外

@@ -42,20 +42,20 @@ env:
 
   # Action-safety and current-compensation gains
   action_safety:
-    g_throttle: 0.60         # 危险时适度降油门，但最低仍保留 40%（不会太慢）
+    g_throttle: 0.60         # 危险时适度降油门
     g_diff: 0.90             # 危险时优先"少转"，减少贴墙刮行
     g_bias: 0.30
     back_wall_buffer: 0.12
     back_wall_push: 0.35
     outer_yaw_gain: 0.18
     current_heading_gain: 0.70
-    lateral_vel_gain: 0.60   # ← 新增：侧向速度纠偏强度
-    entrance_guard: 0.05     # ← 新增：开口内侧保护带，避免门口被误触发
+    lateral_vel_gain: 0.60   # 侧向速度纠偏强度
+    entrance_guard: 0.05     # 开口内侧保护带，避免门口被误触发
 
   # ILOS gains (set ki=0 to disable integral initially)
   ilos:
-    kp: 1.0                  # 略柔一点，减少抖
-    ki: 0.02                 # 给少量积分，慢慢消除稳态偏差（不至于过饱和）
+    kp: 1.0                
+    ki: 0.02                
   disturbances:
     forces:
       use_force_disturbance: True
@@ -148,13 +148,13 @@ env:
     yaw_tolerance_deg: 12.0        # 朝向容差
     velocity_tolerance: 0.12       # 速度阈值
     kill_dist: 70.0                     # 远离过多判失败
-    time_reward: 0.0                     # 不再用 GoToXY 的逐步时间惩罚
+    time_reward: 0.0                  
 
-  # === 启用改进版奖励（默认走 improved；临时想对比旧版就改 false）===
+  # === 启用改进版奖励（默认走 improved）===
   berthing_reward:
     use_improved: true
 
-  # === 事件幅值（仅对旧版 compute_berthing_reward 生效；训练期建议小标度）===
+  # === 事件幅值（仅对旧版 compute_berthing_reward 生效）===
   reward_parameters:
     name: GoToXY
     reward_mode: linear
@@ -163,12 +163,12 @@ env:
     dwell_bonus: 0.002       # 旧版：门内每步微奖
     success_bonus: 10.0      # 旧版：成功大奖励（原来 50.0）
     fail_penalty: 5.0        # 旧版：失败惩罚（原来 20.0）
-    success_hold_gain: 5.0   # 新版奖励-原硬编码≈10.0，这里先减半，更稳
-    mouth_fail_hits: 3       # 新增：门口侧墙"几何越界"的连击触发帧数
+    success_hold_gain: 5.0   # 新版奖励
+    mouth_fail_hits: 3       # 门口侧墙"几何越界"的连击触发帧数
 
   # === 改进版奖励的权重（新增这些键，给 improved 使用）===
   berthing_reward_weights:
-    # 旧版键保留（distance_outside/distance_inside/...）以便随时切回；在其下方追加这组新键
+    # 旧版键保留（distance_outside/distance_inside/...）
     distance: 3.0      # 几何：门外靠门/门内靠中心，范围约 [-1,1]
     heading:  2.0      # 门内对齐航向，范围 [0,1]
     velocity: 1.5      # 自适应速度条目，范围约 [-5,2] 但合成前有权重
@@ -178,7 +178,7 @@ env:
     danger_margin: 0.25 # 安全带略放宽，减少"门口卡分"的情况
     center_progress: 1.0  # 门内向中心的进度差权重（可调）
     
-    # 旧版键保留（distance_outside/distance_inside/...）以便随时切回
+    # 旧版键保留（distance_outside/distance_inside/...）
     distance_outside:   1.0   # 门外：鼓励靠近门线
     distance_inside:    5.0   # 门内：鼓励靠近泊位中心
     yaw_alignment:      1.5   # 与门向对齐
@@ -190,7 +190,7 @@ env:
     soft_margin:        0.20  
     barrier_extra:      1.0   # 碰墙惩罚倍率，可不配，默认 1.0
 
-  # ===（可选）总奖励合成权重 + 课程化（calculate_metrics 已支持）===
+  # ===（可选）总奖励合成权重 + 课程化===
   reward_weights:
     base: 0.0                 # GoToXY 的基础奖励，靠泊任务里通常不需要
     berth: 1.0                # 靠泊 shaping 主体
